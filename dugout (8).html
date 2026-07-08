@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUGOUT '26 — Career Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A2318;
+    --bg-stripe:#0D2A1D;
+    --panel:#123526;
+    --panel-light:#1B4632;
+    --panel-lighter:#224f39;
+    --line:#2C5C43;
+    --chalk:#F3EFE2;
+    --muted:#9FBBAA;
+    --gold:#D9A94C;
+    --gold-dim:#8a763c;
+    --blue:#5AA9E6;
+    --red:#D1544A;
+    --draw:#B7C4BB;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(90deg, var(--bg) 0px, var(--bg) 40px, var(--bg-stripe) 40px, var(--bg-stripe) 80px);
+    color:var(--chalk);
+    font-family:'Barlow',sans-serif;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:'Anton',sans-serif; font-weight:400; letter-spacing:0.5px;}
+  .mono{font-family:'Space Mono',monospace;}
+  a{color:inherit;}
+  button{
+    font-family:'Barlow',sans-serif;
+    font-weight:600;
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    padding:10px 18px;
+    font-size:14px;
+    letter-spacing:0.3px;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  button:active{transform:scale(0.97);}
+  button:focus-visible, [tabindex]:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+  .btn-primary{background:var(--gold); color:#231a06;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent; color:var(--chalk); border:1px solid var(--line);}
+  .btn-ghost:hover{background:var(--panel-light);}
+  .btn-danger{background:var(--red); color:#2a0906;}
+  .btn-small{padding:6px 12px; font-size:12px; border-radius:5px;}
+  .btn-primary:disabled, .btn-ghost:disabled{opacity:0.35; cursor:not-allowed;}
+
+  #app{max-width:1180px; margin:0 auto; padding:18px 16px 60px;}
+
+  /* ---------- TEAM SELECT SCREEN ---------- */
+  .hero{
+    text-align:center;
+    padding:36px 10px 26px;
+    border-bottom:2px solid var(--line);
+    margin-bottom:26px;
+  }
+  .hero .eyebrow{color:var(--gold); letter-spacing:4px; font-size:12px; text-transform:uppercase; font-family:'Space Mono',monospace;}
+  .hero h1{font-size:56px; margin:6px 0 4px; line-height:0.95;}
+  .hero p{color:var(--muted); max-width:520px; margin:0 auto; font-size:15px;}
+  .pitch-sig{width:220px; margin:18px auto 0; opacity:0.85;}
+
+  .division-heading{
+    display:flex; align-items:center; gap:10px; margin:26px 4px 12px;
+  }
+  .division-heading h2{margin:0; font-size:22px;}
+  .division-heading .tag{
+    font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); border:1px solid var(--line);
+    border-radius:20px; padding:3px 10px;
+  }
+  .exclusion-note{
+    color:var(--muted); font-size:12px; text-align:center; max-width:700px; margin:0 auto 18px;
+    background:rgba(209,84,74,0.15); border:1px solid var(--red); border-radius:8px; padding:10px 14px;
+  }
+
+  .team-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));
+    gap:14px;
+  }
+  .team-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .team-card .badge{
+    width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Anton',sans-serif; font-size:16px; color:#fff;
+    flex-shrink:0;
+  }
+  .team-card .thead{display:flex; align-items:center; gap:10px;}
+  .team-card .tname{font-size:16px; line-height:1.15;}
+  .team-card .tsub{color:var(--muted); font-size:12px;}
+  .team-stats{display:flex; gap:14px; font-family:'Space Mono',monospace; font-size:12px; color:var(--muted);}
+  .team-stats b{color:var(--chalk); font-size:15px; display:block; font-family:'Space Mono',monospace;}
+
+  /* ---------- HEADER BAR (in-game) ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 16px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .topbar .club{display:flex; align-items:center; gap:12px;}
+  .topbar .club .badge{
+    width:40px; height:40px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Anton',sans-serif; color:#fff; font-size:14px;
+  }
+  .topbar .club .name{font-size:18px;}
+  .topbar .club .meta{color:var(--muted); font-size:11px; font-family:'Space Mono',monospace;}
+  .topbar .stats{display:flex; gap:22px; flex-wrap:wrap;}
+  .topbar .stat{text-align:center;}
+  .topbar .stat .label{font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted);}
+  .topbar .stat .value{font-family:'Space Mono',monospace; font-size:16px; color:var(--gold);}
+  .division-pill{
+    font-family:'Space Mono',monospace; font-size:11px; padding:3px 10px; border-radius:20px;
+    border:1px solid var(--gold); color:var(--gold); margin-left:6px;
+  }
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; border-bottom:2px solid var(--line); padding-bottom:0;}
+  .tab-btn{
+    background:transparent; color:var(--muted); border:none; border-bottom:3px solid transparent;
+    padding:10px 14px; font-size:14px; border-radius:0; position:relative;
+  }
+  .tab-btn.active{color:var(--gold); border-bottom-color:var(--gold);}
+  .tab-btn:hover{color:var(--chalk);}
+  .tab-badge{
+    display:inline-block; background:var(--red); color:#fff; font-family:'Space Mono',monospace;
+    font-size:10px; padding:1px 6px; border-radius:10px; margin-left:6px; vertical-align:2px;
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .panel h2{margin:0 0 12px; font-size:22px; color:var(--gold);}
+  .panel h3{margin:0 0 10px; font-size:16px; color:var(--chalk);}
+  .grid2{display:grid; grid-template-columns:1.3fr 1fr; gap:16px;}
+  @media (max-width:800px){ .grid2{grid-template-columns:1fr;} }
+
+  .fixture-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line);}
+  .fixture-row:last-child{border-bottom:none;}
+  .fixture-teams{font-size:15px;}
+  .fixture-teams .vs{color:var(--muted); margin:0 8px; font-size:12px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; padding:6px 8px; border-bottom:1px solid var(--line);}
+  td{padding:7px 8px; border-bottom:1px solid rgba(44,92,67,0.5); font-family:'Space Mono',monospace;}
+  td.name-cell{font-family:'Barlow',sans-serif;}
+  tr.user-row{background:rgba(217,169,76,0.12);}
+  tr.champ-zone td:first-child{box-shadow:inset 3px 0 0 var(--blue);}
+  tr.releg-zone td:first-child{box-shadow:inset 3px 0 0 var(--red);}
+  .pos-num{color:var(--muted); width:26px; display:inline-block;}
+
+  .squad-list .prow{display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid rgba(44,92,67,0.5); font-size:13px;}
+  .squad-list .prow:last-child{border-bottom:none;}
+  .pos-chip{
+    font-family:'Space Mono',monospace; font-size:11px; width:32px; text-align:center;
+    padding:3px 0; border-radius:4px; background:var(--panel-light); color:var(--muted); flex-shrink:0;
+  }
+  .prow .pname{flex:1; min-width:110px; line-height: 1.4;}
+  .prow .pmeta{color:var(--muted); font-size:11px; font-family:'Space Mono',monospace; width:135px; line-height:1.3;}
+  .prow .pval{font-family:'Space Mono',monospace; color:var(--gold); width:70px; text-align:right;}
+  .ovr-badge{
+    font-family:'Space Mono',monospace; font-weight:700; font-size:12px;
+    width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--panel-lighter); flex-shrink:0;
+  }
+
+  .market-controls{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;}
+
+  .empty-state{color:var(--muted); font-size:13px; padding:14px 4px; text-align:center;}
+
+  /* ---------- MATCH MODAL / TICKER ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(5,15,10,0.85);
+    display:flex; align-items:center; justify-content:center; z-index:50; padding:14px;
+  }
+  .modal-overlay.hidden{display:none;}
+  .match-modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    width:100%; max-width:520px; padding:22px; max-height:90vh; overflow:auto;
+  }
+  .match-header{text-align:center; margin-bottom:12px;}
+  .match-header .comp{color:var(--muted); font-size:11px; letter-spacing:2px; text-transform:uppercase;}
+  .scoreboard{
+    display:flex; align-items:center; justify-content:center; gap:18px; margin:14px 0 18px;
+  }
+  .scoreboard .side{flex:1; text-align:center;}
+  .scoreboard .side .badge{margin:0 auto 6px;}
+  .scoreboard .side .sname{font-size:13px; min-height:32px; display:flex; align-items:center; justify-content:center;}
+  .scoreboard .score{
+    font-family:'Space Mono',monospace; font-size:38px; color:var(--gold);
+    background:#081a12; border-radius:8px; padding:6px 16px; letter-spacing:2px;
+  }
+  .tactic-row{display:flex; gap:8px; justify-content:center; margin-bottom:16px;}
+  .tactic-btn{background:var(--panel-light); color:var(--muted); border:1px solid var(--line); padding:8px 12px; border-radius:6px; font-size:12px;}
+  .tactic-btn.sel{background:var(--gold); color:#231a06; border-color:var(--gold);}
+  .ticker-box{
+    background:#081a12; border:1px solid var(--line); border-radius:8px;
+    padding:10px 14px; height:180px; overflow-y:auto; font-family:'Space Mono',monospace; font-size:12.5px;
+    display:flex; flex-direction:column; gap:5px;
+  }
+  .ticker-line{opacity:0; animation:fadein .35s forwards;}
+  .ticker-line .min{color:var(--gold); margin-right:8px;}
+  .ticker-line.goal{color:#8fe3a0; font-weight:700;}
+  @keyframes fadein{ to{opacity:1;} }
+  .modal-actions{display:flex; gap:10px; justify-content:center; margin-top:16px;}
+  .cursor-blink{display:inline-block; width:8px; color:var(--gold); animation:blink 1s step-start infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .season-end-badge{
+    text-align:center; padding:18px; background:var(--panel-light); border-radius:8px; margin-bottom:14px;
+  }
+  .season-end-badge .trophy{font-size:30px;}
+  .footer-note{color:var(--muted); font-size:11px; text-align:center; margin-top:24px;}
+  .link-reset{color:var(--muted); font-size:11px; text-decoration:underline; cursor:pointer; background:none; border:none; padding:0;}
+
+  .sack-badge{
+    text-align:center; padding:18px; background:rgba(209,84,74,0.15); border:1px solid var(--red); border-radius:8px; margin-bottom:14px;
+  }
+  .sack-badge .icon{font-size:30px;}
+  .offer-row{border-bottom:1px solid rgba(44,92,67,0.5); padding:12px 4px;}
+  .offer-row:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================== DATA GEN ============================== */
+const SERIE_A_NAMES = ["Montefiore Calcio","Portovento FC","Castelnuovo United","Baiano Sport Club",
+"Serralunga AC","Rocchetta 1919","Vallefredda Calcio","Torresecca FC","Campolungo United",
+"Monteverde AC","Piancastello Sport","Borgorosso Calcio","Santarcangelo FC","Ferravecchia AC",
+"Collealto United","Marinella Calcio","Sassoforte FC","Petralta AC"];
+
+const SERIE_B_NAMES = ["Aurora Villanova","Nuova Speranza FC","Real Fossalta","Junior Casalbordino",
+"Vigor Rocchetta","Audace Melito","Atletico Selvapiana","Pro Calvanico","Unione Torbiera",
+"Stella Rionero","Libertas Fiumicello","San Vito Calcio","Nuova Gioventù","Pontelagoscuro FC",
+"Virtus Caldarola","Aquilotti Sarnico","Fortitudo Bagnara","Ideale Solfara"];
+
+// Squadre Europee Fittizie
+const EURO_TEAM_NAMES = [
+  "Madrid Galácticos", "Manchester Knights", "München Titans", "Paris Predators",
+  "Barcelona Lions", "London Royals", "Liverpool Reds", "Amsterdam Stars",
+  "Lisboa Dragons", "Dortmund Hornets", "Glasgow Celts", "Istanbul Eagles",
+  "Bruges Crowns", "Athens Gods", "Vienna Emperors", "Lyon Olympians"
+];
+
+const FIRST_NAMES = ["Marco","Luca","Andrea","Matteo","Davide","Simone","Alessio","Federico","Riccardo",
+"Stefano","Gabriele","Lorenzo","Nicola","Fabio","Emanuele","Giacomo","Tommaso","Cristian","Daniele",
+"Antonio","Filippo","Enrico","Massimo","Paolo","Roberto","Salvatore","Vincenzo","Michele","Giovanni","Leonardo",
+"Samuele","Edoardo","Pietro","Alberto","Manuel","Christian","Mattia","Diego","Raffaele","Domenico",
+"Gennaro","Ivan","Kevin","Luigi","Mirko","Nicolò","Omar","Pasquale","Sebastiano","Valerio",
+"Adrian","Bruno","Dario","Elia","Franco","Igor","Jacopo","Karim","Loris","Nathan",
+"Oscar","Rocco","Saverio","Tiziano","Ugo","Walter","Yuri","Zeno","Aldo","Bernardo"];
+const LAST_NAMES = ["Ferrari","Romano","Colombo","Ricci","Marino","Greco","Bruno","Gallo","Conti","De Luca",
+"Costa","Giordano","Mancini","Rizzo","Lombardi","Moretti","Barbieri","Fontana","Santoro","Mariani",
+"Rinaldi","Caruso","Ferrara","Galli","Martini","Leone","Longo","Gentile","Martinelli","Vitale",
+"Serra","Coppola","De Santis","D'Angelo","Marchetti","Parisi","Villa","Conte","Testa","Farina",
+"Grasso","Pellegrini","Palumbo","Sanna","Fabbri","Monti","Neri","Silvestri","Cattaneo","Bianchi",
+"Orlando","Amato","Piras","Basile","Bernardi","Sartori","Guerra","Donati","Ferretti","Riva",
+"Bassi","Cesari","D'Amico","Esposito","Fiore","Grimaldi","Iori","Lupi","Napoli","Zanetti"];
+
+function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function randf(min,max){ return Math.random()*(max-min)+min; }
+function choice(arr){ return arr[rand(0,arr.length-1)]; }
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+function fmtM(v){ return "€" + (v==null?0:v).toFixed(1) + "M"; }
+function badgeColor(i){ return `hsl(${Math.round(i*137.508 + rand(0,40))%360},${rand(46,62)}%,${rand(32,42)}%)`; }
+function initials(name){
+  return name.split(" ").filter(w=>w.length>1 && !["FC","AC","1919","United","Sport","Club","Calcio"].includes(w))
+    .slice(0,2).map(w=>w[0]).join("").toUpperCase() || name.slice(0,2).toUpperCase();
+}
+
+/* ---------- Crest / logo generation ---------- */
+const CREST_SHAPES = ["shield","circle","hex"];
+const CREST_EMBLEMS = ["star","diamond","triangle","chevron","ring"];
+function hslShift(hsl, dl){
+  let m = hsl.match(/hsl\((\d+),(\d+)%,(\d+)%\)/);
+  if(!m) return hsl;
+  let h=+m[1], s=+m[2], l=clamp(+m[3]+dl,10,88);
+  return `hsl(${h},${s}%,${l}%)`;
+}
+function starPoints(cx,cy,outerR,innerR,points){
+  let pts=[];
+  for(let i=0;i<points*2;i++){
+    let r = i%2===0? outerR: innerR;
+    let ang = (Math.PI/points)*i - Math.PI/2;
+    pts.push(`${(cx+r*Math.cos(ang)).toFixed(1)},${(cy+r*Math.sin(ang)).toFixed(1)}`);
+  }
+  return pts.join(" ");
+}
+function crestShapePath(shape){
+  if(shape==="shield") return `<path d="M50 4 L88 17 L88 54 Q88 84 50 96 Q12 84 12 54 L12 17 Z"/>`;
+  if(shape==="hex") return `<polygon points="50,6 89,28 89,72 50,94 11,72 11,28"/>`;
+  return `<circle cx="50" cy="50" r="45"/>`;
+}
+function crestEmblemMarkup(emblem, secondary){
+  if(emblem==="star") return `<polygon points="${starPoints(50,46,20,9,5)}" fill="${secondary}"/>`;
+  if(emblem==="diamond") return `<polygon points="50,25 75,50 50,75 25,50" fill="${secondary}"/>`;
+  if(emblem==="triangle") return `<polygon points="50,25 74,66 26,66" fill="${secondary}"/>`;
+  if(emblem==="chevron") return `<path d="M27,58 L50,35 L73,58 M27,44 L50,21 L73,44" stroke="${secondary}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return `<circle cx="50" cy="46" r="15" stroke="${secondary}" stroke-width="6" fill="none"/><circle cx="50" cy="46" r="4" fill="${secondary}"/>`;
+}
+function crestSVG(team, size){
+  size = size || 44;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="flex-shrink:0;">
+    <g fill="${team.color || '#1a3a5f'}" stroke="rgba(243,239,226,0.55)" stroke-width="2.5">
+      ${crestShapePath(team.crestShape || 'circle')}
+    </g>
+    ${crestEmblemMarkup(team.crestEmblem || 'star', team.colorSecondary || '#5AA9E6')}
+    <text x="50" y="88" text-anchor="middle" font-family="Anton, sans-serif" font-size="15" fill="#F3EFE2">${initials(team.name)}</text>
+  </svg>`;
+}
+
+let PLAYER_ID = 1;
+function calcValue(p){
+  let ageFactor = p.age<=23?1.35 : p.age<=29?1.1 : p.age<=32?0.75:0.35;
+  let base = Math.pow(p.overall/50,3)*7.5;
+  let v = base*ageFactor;
+  return Math.max(0.2, Math.round(v*10)/10);
+}
+function getMarketValue(p){
+  if(p.contract <= 6) return Math.max(0.1, Math.round(p.value * 0.6 * 10)/10);
+  return p.value;
+}
+function generatePlayer(teamOverall, pos, ageOverride){
+  let age = ageOverride || rand(17,35);
+  let variance = rand(-13,13);
+  let ageAdj = age<21? -4 : (age>32? -3:0);
+  let overall = clamp(teamOverall+variance+ageAdj, 40, 94);
+  let p = {id:PLAYER_ID++, name: choice(FIRST_NAMES)+" "+choice(LAST_NAMES), pos, age, overall};
+  p.value = calcValue(p);
+  p.contract = rand(12, 48);
+  return p;
+}
+function buildSquad(teamOverall){
+  let squad = [];
+  const layout = [["POR",2],["DIF",6],["CEN",7],["ATT",5]];
+  layout.forEach(([pos,count])=>{
+    for(let i=0;i<count;i++) squad.push(generatePlayer(teamOverall,pos));
+  });
+  return squad;
+}
+function bestXI(squad){
+  const need = [["POR",1],["DIF",4],["CEN",3],["ATT",3]];
+  let xi = [];
+  need.forEach(([pos,count])=>{
+    let pool = squad.filter(p=>p.pos===pos).sort((a,b)=>b.overall-a.overall);
+    xi = xi.concat(pool.slice(0,count));
+  });
+  return xi;
+}
+function teamOverallFromSquad(squad){
+  let xi = bestXI(squad);
+  if(xi.length===0) return 50;
+  return Math.round(xi.reduce((s,p)=>s+p.overall,0)/xi.length);
+}
+
+/* ---------- World generation ---------- */
+function generateWorld(){
+  let entries = SERIE_A_NAMES.map(n=>({name:n, division:'A'})).concat(SERIE_B_NAMES.map(n=>({name:n, division:'B'})));
+  let teams = entries.map((entry,i)=>{
+    let seedOverall = entry.division==='A' ? rand(58,86) : rand(38,62);
+    let squad = buildSquad(seedOverall);
+    let overall = teamOverallFromSquad(squad);
+    let budget = entry.division==='A'
+      ? Math.max(8, Math.round((10 + (overall-55)*2.5 + rand(-5,10))*10)/10)
+      : Math.max(2, Math.round((4 + (overall-45)*1.5 + rand(-3,5))*10)/10);
+    let color = badgeColor(i);
+    return {
+      id:i, name:entry.name, division:entry.division, color, colorSecondary: hslShift(color, 34), squad, overall, budget,
+      crestShape: choice(CREST_SHAPES), crestEmblem: choice(CREST_EMBLEMS),
+      played:0, win:0, draw:0, loss:0, gf:0, ga:0, pts:0,
+      manager: choice(FIRST_NAMES) + " " + choice(LAST_NAMES),
+      qualifiedEurope: false
+    };
+  });
+  return teams;
+}
+
+/* ---------- Round robin schedule ---------- */
+function generateSchedule(teamIds){
+  let n = teamIds.length;
+  let arr = teamIds.slice();
+  let fixed = arr[0];
+  let rotating = arr.slice(1);
+  let rounds = [];
+  for(let r=0;r<n-1;r++){
+    let full = [fixed, ...rotating];
+    let pairs = [];
+    for(let i=0;i<n/2;i++){
+      let home = full[i], away = full[n-1-i];
+      if(r%2===0) pairs.push({home,away}); else pairs.push({home:away,away:home});
+    }
+    rounds.push(pairs);
+    rotating.unshift(rotating.pop());
+  }
+  let secondLeg = rounds.map(rnd=>rnd.map(m=>({home:m.away,away:m.home})));
+  return rounds.concat(secondLeg);
+}
+
+/* ============================== MATCH SIM ============================== */
+function poissonRandom(lambda){
+  let L=Math.exp(-lambda), k=0, p=1;
+  do{ k++; p*=Math.random(); } while(p>L);
+  return k-1;
+}
+function tacticMod(tactic){
+  if(tactic==="off") return {self:0.4, opp:0.2};
+  if(tactic==="dif") return {self:-0.3, opp:-0.3};
+  return {self:0, opp:0};
+}
+function expectedGoals(strA, strB, tacticA){
+  let diff = strA + 3 - strB;
+  let mod = tacticMod(tacticA);
+  let exp = clamp(1.15 + diff/38 + mod.self, 0.25, 4.2);
+  return exp;
+}
+function quickScore(home, away){
+  let sh = effectiveOverall(home), sa = effectiveOverall(away);
+  let eh = expectedGoals(sh, sa, "bal");
+  let ea = expectedGoals(sa, sh, "bal");
+  return [poissonRandom(eh), poissonRandom(ea)];
+}
+
+function detailedMatch(home, away, tacticHome){
+  let sh = effectiveOverall(home), sa = effectiveOverall(away);
+  let eh = expectedGoals(sh, sa, tacticHome);
+  let ea_mod = tacticMod(tacticHome).opp;
+  let ea = clamp(expectedGoals(sa, sh, "bal") + ea_mod, 0.2, 4.5);
+  let hg = poissonRandom(eh), ag = poissonRandom(ea);
+
+  let homeAttackers = lineupStarters(home).filter(p=>p.pos==="CEN"||p.pos==="ATT").sort((a,b)=>b.overall-a.overall);
+  let awayAttackers = lineupStarters(away).filter(p=>p.pos==="CEN"||p.pos==="ATT").sort((a,b)=>b.overall-a.overall);
+  if(homeAttackers.length===0) homeAttackers = home.squad && home.squad.length > 0 ? home.squad : [{name: "Attaccante"}];
+  if(awayAttackers.length===0) awayAttackers = away.squad && away.squad.length > 0 ? away.squad : [{name: "Attaccante"}];
+
+  function pickScorer(pool){
+    let idx = Math.min(pool.length-1, Math.floor(Math.abs(rand(0,4)-2)));
+    return pool[idx] || pool[0];
+  }
+
+  let events = [];
+  for(let i=0;i<hg;i++){
+    let scorer = pickScorer(homeAttackers);
+    events.push({min: rand(1,90), type:"goal", side:"home", text:`GOL! ${scorer.name} porta avanti ${home.name}!`});
+  }
+  for(let i=0;i<ag;i++){
+    let scorer = pickScorer(awayAttackers);
+    events.push({min: rand(1,90), type:"goal", side:"away", text:`GOL! ${scorer.name} segna per ${away.name}!`});
+  }
+  const flavor = [
+    ()=>`Occasione sprecata da ${choice(homeAttackers.concat(awayAttackers)).name}`,
+    ()=>`Gran parata del portiere!`,
+    ()=>`Tiro alto sopra la traversa`,
+    ()=>`Ammonizione per gioco falloso`,
+    ()=>`Calcio d'angolo, cross respinto`,
+    ()=>`Contropiede pericoloso, difesa in affanno`,
+  ];
+  let flavorCount = rand(5,8);
+  for(let i=0;i<flavorCount;i++){
+    events.push({min: rand(1,90), type:"flavor", side: Math.random()>0.5?"home":"away", text: choice(flavor)()});
+  }
+  events.sort((a,b)=>a.min-b.min);
+  return {hg, ag, events};
+}
+
+/* ============================== STATE ============================== */
+let STATE = null;
+
+const FORMATIONS = {
+  "4-4-2": {DIF:4,CEN:4,ATT:2},
+  "4-3-3": {DIF:4,CEN:3,ATT:3},
+  "3-5-2": {DIF:3,CEN:5,ATT:2},
+  "4-5-1": {DIF:4,CEN:5,ATT:1},
+  "5-3-2": {DIF:5,CEN:3,ATT:2}
+};
+
+function buildAutoLineup(team, formationKey){
+  const req = FORMATIONS[formationKey];
+  const porPool = team.squad.filter(p=>p.pos==='POR').sort((a,b)=>b.overall-a.overall);
+  const difPool = team.squad.filter(p=>p.pos==='DIF').sort((a,b)=>b.overall-a.overall);
+  const cenPool = team.squad.filter(p=>p.pos==='CEN').sort((a,b)=>b.overall-a.overall);
+  const attPool = team.squad.filter(p=>p.pos==='ATT').sort((a,b)=>b.overall-a.overall);
+  return {
+    formation: formationKey,
+    slots: {
+      POR: porPool.slice(0,1).map(p=>p.id),
+      DIF: difPool.slice(0,req.DIF).map(p=>p.id),
+      CEN: cenPool.slice(0,req.CEN).map(p=>p.id),
+      ATT: attPool.slice(0,req.ATT).map(p=>p.id)
+    }
+  };
+}
+
+function ensureValidLineup(){
+  if(STATE.userTeamId===null) return;
+  const me = getTeam(STATE.userTeamId);
+  if(!me) return;
+  if(!STATE.userLineup){ STATE.userLineup = buildAutoLineup(me, "4-4-2"); return; }
+  const req = FORMATIONS[STATE.userLineup.formation] || FORMATIONS["4-4-2"];
+  const needs = {POR:1, DIF:req.DIF, CEN:req.CEN, ATT:req.ATT};
+  const squadIds = new Set(me.squad.map(p=>p.id));
+  if(!STATE.userLineup.slots) STATE.userLineup.slots = {POR:[],DIF:[],CEN:[],ATT:[]};
+  ["POR","DIF","CEN","ATT"].forEach(pos=>{
+    let arr = (STATE.userLineup.slots[pos]||[]).filter(id=>id!=null && squadIds.has(id));
+    arr = [...new Set(arr)];
+    const need = needs[pos];
+    if(arr.length>need){
+      arr = arr.map(id=>me.squad.find(p=>p.id===id)).sort((a,b)=>b.overall-a.overall).slice(0,need).map(p=>p.id);
+    }
+    if(arr.length<need){
+      const used = new Set(arr);
+      const pool = me.squad.filter(p=>p.pos===pos && !used.has(p.id)).sort((a,b)=>b.overall-a.overall);
+      for(let i=0;i<need-arr.length && i<pool.length;i++) arr.push(pool[i].id);
+    }
+    STATE.userLineup.slots[pos] = arr;
+  });
+}
+
+function lineupStarters(team){
+  if(team.isEuroFake) return team.squad || [];
+  if(team.id===STATE.userTeamId && STATE.userLineup){
+    const s = STATE.userLineup.slots;
+    const ids = [].concat(s.POR||[], s.DIF||[], s.CEN||[], s.ATT||[]);
+    let starters = team.squad.filter(p=>ids.includes(p.id));
+    if(starters.length===11) return starters;
+  }
+  return bestXI(team.squad);
+}
+function effectiveOverall(team){
+  if(team.isEuroFake) return team.overall;
+  let starters = lineupStarters(team);
+  if(starters.length===0) return 50;
+  return Math.round(starters.reduce((s,p)=>s+p.overall,0)/starters.length);
+}
+function lineupSlotCount(){
+  if(!STATE.userLineup) return 0;
+  const s = STATE.userLineup.slots;
+  return (s.POR||[]).length + (s.DIF||[]).length + (s.CEN||[]).length + (s.ATT||[]).length;
+}
+
+/* ---------- Modals ---------- */
+function showConfirm(message, onYes){
+  STATE.confirmCallback = onYes;
+  const root = document.getElementById('modal-root');
+  if(!root) return;
+  root.innerHTML = `
+    <div class="modal-overlay">
+      <div class="match-modal" style="max-width:380px; text-align:center;">
+        <p style="font-size:14px; line-height:1.5; margin-bottom:18px;">${message}</p>
+        <div class="modal-actions">
+          <button class="btn-primary" onclick="runConfirm()">Conferma</button>
+          <button class="btn-ghost" onclick="closeMatchModal()">Annulla</button>
+        </div>
+      </div>
+    </div>`;
+}
+function showAlert(msg){
+  const root = document.getElementById('modal-root');
+  if(!root) return;
+  root.innerHTML = `
+    <div class="modal-overlay">
+      <div class="match-modal" style="max-width:380px; text-align:center;">
+        <p style="font-size:14px; line-height:1.5; margin-bottom:18px;">${msg}</p>
+        <div class="modal-actions">
+          <button class="btn-primary" onclick="closeMatchModal()">Ok</button>
+        </div>
+      </div>
+    </div>`;
+}
+function openHelpModal(){
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay">
+      <div class="match-modal" style="max-width:600px; text-align:left;">
+        <div class="match-header"><div class="comp">Guida al Gioco</div></div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.5;">
+          <h3 style="color:var(--gold); margin-top:0;">Le Basi</h3>
+          <p>Gestisci il tuo club verso la gloria! Devi centrare l'obiettivo stagionale (salvezza, promozione, o Europa) per evitare l'esonero.</p>
+          <h3 style="color:var(--gold);">Sezioni</h3>
+          <ul style="padding-left:20px; margin-bottom:12px;">
+            <li><b>Dashboard:</b> Il cuore del gioco. Da qui puoi simulare le partite o giocarle in diretta scegliendo la tattica.</li>
+            <li><b>Rosa & Formazione:</b> Controlla i tuoi giocatori. Un OVR più alto significa giocatori migliori. In Formazione decidi chi scende in campo: assicurati di coprire tutti i ruoli!</li>
+            <li><b>Calendario & Classifica:</b> Tieni d'occhio i tuoi progressi nel campionato e nelle Coppe Europee.</li>
+            <li><b>Mercato:</b> Compra nuovi talenti. Scegli saggiamente e tratta sul prezzo. Puoi anche ingaggiare svincolati gratuitamente.</li>
+            <li><b>Notifiche:</b> Qui riceverai le offerte degli altri club per i tuoi giocatori e gli avvisi sui contratti in scadenza.</li>
+          </ul>
+          <h3 style="color:var(--gold);">Gestione Finanze e Contratti</h3>
+          <p>Partecipando all'Europa o vincendo partite riceverai budget. Usa il budget per comprare giocatori o rinnovare i contratti. Fai attenzione alle scadenze: a 0 mesi il giocatore lascerà il club!</p>
+        </div>
+        <div class="modal-actions" style="margin-top:20px;">
+          <button class="btn-primary" onclick="closeMatchModal()">Capito!</button>
+        </div>
+      </div>
+    </div>`;
+}
+function runConfirm(){
+  const cb = STATE.confirmCallback;
+  STATE.confirmCallback = null;
+  closeMatchModal();
+  if(cb) cb();
+}
+
+/* ---------- Division state helpers ---------- */
+function getTeam(id){ return STATE.teams.find(t=>t.id===id); }
+function otherDivisionKey(key){ return key==='A' ? 'B' : 'A'; }
+
+function computeStandings(divKey){
+  const divTeams = STATE.teams.filter(t=>t.division===divKey);
+  divTeams.forEach(t=>{ t.played=0;t.win=0;t.draw=0;t.loss=0;t.gf=0;t.ga=0;t.pts=0; });
+  const results = STATE.divisions[divKey].results;
+  results.forEach(r=>{
+    let h = getTeam(r.home), a = getTeam(r.away);
+    h.played++; a.played++;
+    h.gf+=r.hg; h.ga+=r.ag; a.gf+=r.ag; a.ga+=r.hg;
+    if(r.hg>r.ag){ h.win++; h.pts+=3; a.loss++; }
+    else if(r.hg<r.ag){ a.win++; a.pts+=3; h.loss++; }
+    else { h.draw++; a.draw++; h.pts++; a.pts++; }
+  });
+  return divTeams.slice().sort((a,b)=>{
+    if(b.pts!==a.pts) return b.pts-a.pts;
+    let gdA=a.gf-a.ga, gdB=b.gf-b.ga;
+    if(gdB!==gdA) return gdB-gdA;
+    return b.gf-a.gf;
+  });
+}
+
+function simulateOtherDivisionRound(userDivKey){
+  const otherKey = otherDivisionKey(userDivKey);
+  const dstate = STATE.divisions[otherKey];
+  if(!dstate || dstate.currentRound >= dstate.schedule.length) return;
+  const round = dstate.schedule[dstate.currentRound];
+  round.forEach(m=>{
+    let [hg,ag] = quickScore(getTeam(m.home), getTeam(m.away));
+    dstate.results.push({round:dstate.currentRound, home:m.home, away:m.away, hg, ag});
+  });
+  dstate.currentRound++;
+}
+
+function updatePlayersContracts(){
+  STATE.teams.forEach(t => {
+    const dstate = STATE.divisions[t.division];
+    const isRound3 = dstate && (dstate.currentRound % 3 === 0);
+    
+    t.squad.forEach(p => {
+      if(isRound3 && p.contract > 0){
+        p.contract -= 1;
+      }
+      
+      // Contract Expiry Notification Logic
+      if(t.id === STATE.userTeamId && p.contract <= 6 && p.contract > 0 && !p.notifiedExpiry) {
+        p.notifiedExpiry = true;
+        STATE.notifications = STATE.notifications || [];
+        STATE.notifications.unshift({
+          id: NOTIF_ID++,
+          type: 'expiry',
+          playerId: p.id,
+          status: 'pending',
+          round: dstate ? dstate.currentRound : 0
+        });
+      }
+    });
+  });
+}
+
+/* ============================== TORNEO EUROPEO LOGIC ============================== */
+function initEuroTournament() {
+  let realQualified = STATE.teams.filter(t => t.qualifiedEurope);
+  let participants = realQualified.map(t => ({ id: t.id, name: t.name, overall: t.overall, isEuroFake: false }));
+  
+  let needed = 16 - participants.length;
+  let shuffledFakeNames = EURO_TEAM_NAMES.slice().sort(() => Math.random() - 0.5);
+  for(let i=0; i<needed; i++) {
+    participants.push({
+      id: "fake_" + i,
+      name: shuffledFakeNames[i] || `Euro Club ${i}`,
+      overall: rand(75, 87),
+      isEuroFake: true,
+      squad: [{name: "Müller", pos: "ATT", overall: 80}, {name: "Silva", pos: "ATT", overall: 80}]
+    });
+  }
+  
+  participants.sort(() => Math.random() - 0.5);
+  
+  STATE.euroTournament = {
+    stage: "ottavi", // "ottavi", "quarti", "semifinale", "finale", "concluso"
+    ottavi: [],
+    quarti: [],
+    semifinale: [],
+    finale: []
+  };
+  
+  for(let i=0; i<16; i+=2) {
+    STATE.euroTournament.ottavi.push({
+      home: participants[i], away: participants[i+1], hg: null, ag: null, played: false, winner: null
+    });
+  }
+  STATE.currentTableSubTab = 'league';
+}
+
+function simulateEuroMatch(m) {
+  let sh = m.home.isEuroFake ? m.home.overall : effectiveOverall(getTeam(m.home.id));
+  let sa = m.away.isEuroFake ? m.away.overall : effectiveOverall(getTeam(m.away.id));
+  let eh = expectedGoals(sh, sa, "bal");
+  let ea = expectedGoals(sa, sh, "bal");
+  let hg = poissonRandom(eh);
+  let ag = poissonRandom(ea);
+  if (hg === ag) {
+    if (Math.random() > 0.5) hg++; else ag++;
+  }
+  m.hg = hg;
+  m.ag = ag;
+  m.played = true;
+  m.winner = hg > ag ? m.home : m.away;
+}
+
+function advanceEuroStage() {
+  let current = STATE.euroTournament.stage;
+  let matches = STATE.euroTournament[current];
+  matches.forEach(m => { if(!m.played) simulateEuroMatch(m); });
+  
+  let winners = matches.map(m => m.winner);
+  if (current === "ottavi") {
+    for(let i=0; i<winners.length; i+=2) {
+      STATE.euroTournament.quarti.push({ home: winners[i], away: winners[i+1], hg: null, ag: null, played: false, winner: null });
+    }
+    STATE.euroTournament.stage = "quarti";
+  } else if (current === "quarti") {
+    for(let i=0; i<winners.length; i+=2) {
+      STATE.euroTournament.semifinale.push({ home: winners[i], away: winners[i+1], hg: null, ag: null, played: false, winner: null });
+    }
+    STATE.euroTournament.stage = "semifinale";
+  } else if (current === "semifinale") {
+    STATE.euroTournament.finale.push({ home: winners[0], away: winners[1], hg: null, ag: null, played: false, winner: null });
+    STATE.euroTournament.stage = "finale";
+  } else if (current === "finale") {
+    STATE.euroTournament.stage = "concluso";
+  }
+}
+
+function checkAndTriggerEuro() {
+  const me = getTeam(STATE.userTeamId);
+  if (!me) return;
+  const dstate = STATE.divisions[me.division];
+  const r = dstate.currentRound;
+  
+  let expectedStage = null;
+  if (r === 5) expectedStage = "ottavi";
+  if (r === 11) expectedStage = "quarti";
+  if (r === 18) expectedStage = "semifinale";
+  if (r === 25) expectedStage = "finale";
+  
+  if (!expectedStage || STATE.euroTournament.stage !== expectedStage) return;
+  
+  let stageMatches = STATE.euroTournament[expectedStage];
+  let userMatch = stageMatches.find(m => (!m.home.isEuroFake && m.home.id === me.id) || (!m.away.isEuroFake && m.away.id === me.id));
+  
+  if (userMatch) {
+    let isHome = (!userMatch.home.isEuroFake && userMatch.home.id === me.id);
+    let opp = isHome ? userMatch.away : userMatch.home;
+    STATE.activeEuroMatch = {
+      matchRef: userMatch,
+      oppName: opp.name,
+      overall: opp.overall,
+      isHome: isHome,
+      stage: expectedStage,
+      squad: opp.squad || [{name: "Attaccante", pos:"ATT", overall: opp.overall}]
+    };
+  } else {
+    stageMatches.forEach(m => simulateEuroMatch(m));
+    advanceEuroStage();
+  }
+}
+
+function euroBracketHTML() {
+  const et = STATE.euroTournament;
+  function renderMatchBlock(m) {
+    let hScore = m.played ? m.hg : "-";
+    let aScore = m.played ? m.ag : "-";
+    let hBold = m.played && m.hg > m.ag ? "font-weight:700; color:var(--gold);" : "";
+    let aBold = m.played && m.ag > m.hg ? "font-weight:700; color:var(--gold);" : "";
+    return `
+      <div style="background:var(--panel-light); border:1px solid var(--line); padding:8px; border-radius:6px; font-size:12px; font-family:'Space Mono', monospace;">
+        <div style="display:flex; justify-content:space-between; ${hBold}"><span>${m.home.name}</span><span>${hScore}</span></div>
+        <div style="display:flex; justify-content:space-between; ${aBold}"><span>${m.away.name}</span><span>${aScore}</span></div>
+      </div>
+    `;
+  }
+  
+  const stages = [
+    { key: "ottavi", label: "Ottavi" },
+    { key: "quarti", label: "Quarti" },
+    { key: "semifinale", label: "Semifinale" },
+    { key: "finale", label: "Finale" }
+  ];
+  
+  return `
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-top:12px;">
+      ${stages.map(st => {
+        let matches = et[st.key] || [];
+        return `
+          <div>
+            <h3 style="font-size:13px; border-bottom:1px solid var(--line); padding-bottom:4px; margin-bottom:8px; color:var(--blue); text-transform:uppercase;">${st.label}</h3>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${matches.length === 0 ? '<div class="empty-state" style="font-size:11px;">Da programmare</div>' : matches.map(renderMatchBlock).join("")}
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function initState(){
+  let teams = generateWorld();
+  teams.filter(t=>t.division==='A').sort((a,b)=>b.overall-a.overall).slice(0,4).forEach(t=>t.qualifiedEurope=true);
+  
+  let divisions = {
+    A: { schedule: generateSchedule(teams.filter(t=>t.division==='A').map(t=>t.id)), results: [], currentRound: 0 },
+    B: { schedule: generateSchedule(teams.filter(t=>t.division==='B').map(t=>t.id)), results: [], currentRound: 0 }
+  };
+  STATE = {
+    teams, divisions, season: 2026,
+    userTeamId: null, userCoachName: "", objective: null, objectiveType: null, market: [], pendingMatch: null, negotiation: null,
+    userLineup: null, confirmCallback: null, notifications: [], counterNeg: null, seasonEndResult: null, renewal: null,
+    excludedTeamIds: [], lastRelegated: [], lastPromoted: [], freeAgentsPool: [], activeEuroMatch: null, currentTableSubTab: 'league'
+  };
+  initEuroTournament();
+}
+initState();
+let NOTIF_ID = 1;
+let tableViewDivision = null;
+
+/* ============================== RENDER ============================== */
+const app = document.getElementById('app');
+let activeTab = 'dashboard';
+
+function render(){
+  if(STATE.userTeamId===null){ renderTeamSelect(); return; }
+  renderGame();
+}
+
+/* ---------- TEAM SELECT ---------- */
+function renderTeamSelect(){
+  const excluded = STATE.excludedTeamIds || [];
+  const availableA = STATE.teams.filter(t=>t.division==='A' && !excluded.includes(t.id)).sort((a,b)=>b.overall-a.overall);
+  const availableB = STATE.teams.filter(t=>t.division==='B' && !excluded.includes(t.id)).sort((a,b)=>b.overall-a.overall);
+
+  function teamCard(t){
+    return `
+      <div class="team-card">
+        <div class="thead">
+          ${crestSVG(t,44)}
+          <div>
+            <div class="tname">${t.name}</div>
+            <div class="tsub">${t.squad.length} giocatori · All: ${t.manager}</div>
+          </div>
+        </div>
+        <div class="team-stats">
+          <div>OVR<b>${t.overall}</b></div>
+          <div>Budget<b>${fmtM(t.budget)}</b></div>
+        </div>
+        <button class="btn-primary" onclick="chooseTeam(${t.id})">Scegli ${t.name.split(" ")[0]}</button>
+      </div>
+    `;
+  }
+
+  const excludedNames = excluded.map(id=>{ const t=getTeam(id); return t?t.name:null; }).filter(Boolean);
+
+  app.innerHTML = `
+    <div class="hero">
+      <div class="eyebrow">STAGIONE ${STATE.season} — CARRIERA ALLENATORE</div>
+      <h1>DUGOUT '26</h1>
+      <p>Scegli la panchina che vuoi guidare. Simula il campionato, gestisci il mercato e porta la tua squadra in cima alla classifica.</p>
+      
+      <div style="max-width: 340px; margin: 20px auto 0; text-align: left; background: var(--panel); padding: 14px; border: 1px solid var(--line); border-radius: 8px;">
+        <label style="font-size: 11px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 6px; font-family: 'Space Mono', monospace; text-align: center;">Nome Allenatore</label>
+        <input id="user-coach-name" type="text" placeholder="Inserisci il tuo nome..." value="${STATE.userCoachName || ''}" style="width:100%; background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:8px 12px; border-radius:6px; font-family:'Barlow',sans-serif; font-size:15px; text-align: center; box-sizing: border-box; outline: none;">
+      </div>
+
+      <svg class="pitch-sig" viewBox="0 0 220 100" fill="none">
+        <rect x="2" y="2" width="216" height="96" rx="4" stroke="#2C5C43" stroke-width="2"/>
+        <line x1="110" y1="2" x2="110" y2="98" stroke="#2C5C43" stroke-width="2"/>
+        <circle cx="110" cy="50" r="16" stroke="#2C5C43" stroke-width="2"/>
+        <rect x="2" y="26" width="26" height="48" stroke="#2C5C43" stroke-width="2"/>
+        <rect x="192" y="26" width="26" height="48" stroke="#2C5C43" stroke-width="2"/>
+      </svg>
+    </div>
+    ${excludedNames.length>0 ? `<div class="exclusion-note">Non puoi tornare ad allenare i club che ti hanno esonerato: <b>${excludedNames.join(", ")}</b>.</div>` : ''}
+    <div class="division-heading"><h2>Serie A</h2><span class="tag">Massima serie</span></div>
+    <div class="team-grid">${availableA.map(teamCard).join("") || '<div class="empty-state">Nessuna squadra disponibile in Serie A.</div>'}</div>
+    <div class="division-heading"><h2>Serie B</h2><span class="tag">Seconda serie</span></div>
+    <div class="team-grid">${availableB.map(teamCard).join("") || '<div class="empty-state">Nessuna squadra disponibile in Serie B.</div>'}</div>
+    <div class="footer-note">Squadre e giocatori generati proceduralmente — nessuna licenza ufficiale.</div>
+  `;
+}
+
+function assignObjective(team){
+  const divTeams = STATE.teams.filter(t=>t.division===team.division).slice().sort((a,b)=>b.overall-a.overall);
+  const rank = divTeams.findIndex(t=>t.id===team.id);
+  const n = divTeams.length;
+  if(team.division==='B'){
+    if(rank < n*0.34){ STATE.objective = "Obiettivo: promozione in Serie A"; STATE.objectiveType = "promozione"; }
+    else { STATE.objective = "Obiettivo: consolidarsi in Serie B"; STATE.objectiveType = "consolidamentoB"; }
+  } else {
+    if(rank < n*0.33){ STATE.objective = "Obiettivo: qualificazione alle coppe europee"; STATE.objectiveType = "euro"; }
+    else if(rank > n*0.66){ STATE.objective = "Obiettivo: salvezza in Serie A"; STATE.objectiveType = "salvezza"; }
+    else { STATE.objective = "Obiettivo: metà classifica, consolidare il progetto"; STATE.objectiveType = "mid"; }
+  }
+}
+
+function chooseTeam(id){
+  const excluded = STATE.excludedTeamIds || [];
+  if(excluded.includes(id)) return;
+  
+  const nameInput = document.getElementById('user-coach-name');
+  if(nameInput && nameInput.value.trim() !== "") {
+    STATE.userCoachName = nameInput.value.trim();
+  } else {
+    STATE.userCoachName = choice(FIRST_NAMES) + " " + choice(LAST_NAMES);
+  }
+
+  STATE.userTeamId = id;
+  const me = getTeam(id);
+  me.manager = STATE.userCoachName;
+  
+  assignObjective(me);
+  STATE.market = [];
+  STATE.negotiation = null;
+  STATE.pendingMatch = null;
+  STATE.userLineup = null;
+  STATE.seasonEndResult = null;
+  tableViewDivision = null;
+  activeTab = 'dashboard';
+  render();
+}
+
+function resetCareer(){
+  showConfirm("Vuoi davvero ricominciare una nuova carriera? Il progresso attuale andrà perso.", ()=>{
+    initState();
+    render();
+  });
+}
+
+/* ---------- BOX ALTO E TAB ---------- */
+function renderGame(){
+  ensureValidLineup();
+  const me = getTeam(STATE.userTeamId);
+  const standings = computeStandings(me.division);
+  const myRank = standings.findIndex(t=>t.id===me.id)+1;
+  const dstate = STATE.divisions[me.division];
+  const pendingNotifs = (STATE.notifications||[]).filter(n=>n.status==='pending').length;
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="club">
+        ${crestSVG(me,40)}
+        <div>
+          <div class="name">${me.name} <span class="division-pill">Serie ${me.division}</span></div>
+          <div class="meta">Mister: ${me.manager} · Stagione ${STATE.season} · ${STATE.objective}</div>
+        </div>
+      </div>
+      <div class="stats" style="align-items:center;">
+        <div class="stat"><div class="label">Giornata</div><div class="value">${Math.min(dstate.currentRound+1,dstate.schedule.length)}/${dstate.schedule.length}</div></div>
+        <div class="stat"><div class="label">Posizione</div><div class="value">${myRank}°</div></div>
+        <div class="stat"><div class="label">Budget</div><div class="value">${fmtM(me.budget)}</div></div>
+        <button class="btn-ghost btn-small" style="margin-left:10px;" onclick="openHelpModal()">📖 Regole</button>
+      </div>
+    </div>
+    <div class="tabs">
+      ${["dashboard:Dashboard","squad:Rosa","lineup:Formazione","calendar:Calendario","table:Classifica","market:Mercato","notifications:Notifiche"].map(t=>{
+        let [key,label]=t.split(":");
+        let badge = (key==='notifications' && pendingNotifs>0) ? `<span class="tab-badge">${pendingNotifs}</span>` : '';
+        return `<button class="tab-btn ${activeTab===key?'active':''}" onclick="setTab('${key}')">${label}${badge}</button>`;
+      }).join("")}
+    </div>
+    <div id="tab-content"></div>
+    <div class="footer-note">
+      <button class="link-reset" onclick="switchTeam()">Cambia squadra</button>
+      &nbsp;·&nbsp;
+      <button class="link-reset" onclick="resetCareer()">Nuova carriera (reset completo)</button>
+    </div>
+    <div id="modal-root"></div>
+  `;
+  renderTabContent();
+}
+
+function switchTeam() {
+  STATE.userTeamId = null;
+  render();
+}
+
+function setTab(key){ activeTab = key; renderGame(); }
+
+function renderTabContent(){
+  const el = document.getElementById('tab-content');
+  if(activeTab==='dashboard') el.innerHTML = dashboardHTML();
+  else if(activeTab==='squad') el.innerHTML = squadHTML();
+  else if(activeTab==='lineup') el.innerHTML = lineupHTML();
+  else if(activeTab==='calendar') el.innerHTML = calendarHTML();
+  else if(activeTab==='table') el.innerHTML = tableHTML();
+  else if(activeTab==='market') el.innerHTML = marketHTML();
+  else if(activeTab==='notifications') el.innerHTML = notificationsHTML();
+}
+
+/* ---------- DASHBOARD ---------- */
+function objectiveThresholds(n){
+  const euroSpots = Math.max(4, Math.round(n*0.33));
+  const relegSpots = 3;
+  return {euroSpots, relegSpots};
+}
+function evaluateObjective(){
+  const me = getTeam(STATE.userTeamId);
+  const divKey = me.division;
+  const standings = computeStandings(divKey);
+  const n = standings.length;
+  const rank = standings.findIndex(t=>t.id===me.id)+1;
+  if(divKey==='B'){
+    const promoted = rank<=3;
+    let met = STATE.objectiveType==='promozione' ? promoted : true;
+    return {rank, n, met, relegated:false, promoted};
+  } else {
+    const {euroSpots, relegSpots} = objectiveThresholds(n);
+    let met;
+    if(STATE.objectiveType==='euro') met = rank <= euroSpots;
+    else met = rank <= (n - relegSpots);
+    const relegated = rank > (n-relegSpots);
+    return {rank, n, met, relegated, promoted:false};
+  }
+}
+function computeSackDecision(){
+  const evalRes = evaluateObjective();
+  if(evalRes.met) return {...evalRes, sacked:false, prob:0};
+  const me = getTeam(STATE.userTeamId);
+  let prob = 0.35;
+  if(me.division==='A' && STATE.objectiveType==='euro') prob += 0.15;
+  if(evalRes.relegated) prob += 0.25;
+  prob = clamp(prob, 0, 0.9);
+  const sacked = Math.random() < prob;
+  return {...evalRes, sacked, prob};
+}
+
+function dashboardHTML(){
+  const me = getTeam(STATE.userTeamId);
+  const dstate = STATE.divisions[me.division];
+  const roundIdx = dstate.currentRound;
+  const seasonOver = roundIdx >= dstate.schedule.length;
+  const divLabel = me.division==='A' ? 'Serie A' : 'Serie B';
+
+  if(seasonOver){
+    if(!STATE.seasonEndResult || STATE.seasonEndResult.season !== STATE.season){
+      const res = computeSackDecision();
+      res.season = STATE.season;
+      STATE.seasonEndResult = res;
+    }
+    const res = STATE.seasonEndResult;
+    const standings = computeStandings(me.division);
+    const champ = standings[0];
+
+    if(res.sacked){
+      return `
+        <div class="panel">
+          <div class="sack-badge">
+            <div class="icon">🚪</div>
+            <h3 style="margin-top:8px; color:var(--red);">Sei stato esonerato</h3>
+            <p style="color:var(--muted); margin:6px 0;">${me.name} (${divLabel}) ha chiuso al <b style="color:var(--chalk)">${res.rank}°</b> posto, mancando l'obiettivo di stagione (${STATE.objective}).</p>
+            <p style="color:var(--muted); margin:6px 0; font-size:13px;">La dirigenza ha deciso di cambiare guida tecnica. Potrai accettare una nuova panchina, ma non potrai più allenare ${me.name}.</p>
+          </div>
+          <button class="btn-primary" onclick="handleSackedContinue()">Cerca una nuova squadra</button>
+        </div>
+      `;
+    }
+
+    let movementNote = '';
+    if(me.division==='A' && res.relegated){
+      movementNote = `<br><span style="color:var(--red)">Retrocessione: la prossima stagione giocherai in Serie B.</span>`;
+    } else if(me.division==='B' && res.promoted){
+      movementNote = `<br><span style="color:#8fe3a0;">Promozione: la prossima stagione giocherai in Serie A! 🎉</span>`;
+    }
+
+    return `
+      <div class="panel">
+        <div class="season-end-badge">
+          <div class="trophy">🏆</div>
+          <h3 style="margin-top:8px;">Stagione ${STATE.season} conclusa — ${divLabel}</h3>
+          <p style="color:var(--muted); margin:6px 0;">Campione: <b style="color:var(--gold)">${champ.name}</b></p>
+          <p style="color:var(--muted); margin:6px 0;">${me.name} ha chiuso al <b style="color:var(--chalk)">${res.rank}°</b> posto.
+          ${res.met
+            ? '<br><span style="color:#8fe3a0;">Obiettivo stagionale raggiunto: la società è soddisfatta.</span>'
+            : `<br><span style="color:var(--red)">Obiettivo mancato, ma la società ti ha confermato la fiducia (per ora).</span>`}
+          ${movementNote}
+          </p>
+        </div>
+        <button class="btn-primary" onclick="startNewSeason()">Inizia stagione ${STATE.season+1}</button>
+      </div>
+    `;
+  }
+
+  if (STATE.activeEuroMatch) {
+    let euro = STATE.activeEuroMatch;
+    return `
+      <div class="grid2">
+        <div class="panel">
+          <h2 style="color:var(--blue);">Coppa Europea — Eliminazione Diretta</h2>
+          <div class="fixture-row" style="border:none;">
+            <div class="fixture-teams">
+              <b>${euro.isHome ? me.name : euro.oppName}</b><span class="vs">vs</span><b>${euro.isHome ? euro.oppName : me.name}</b>
+            </div>
+            <div class="mono" style="color:var(--blue); font-size:12px; text-transform:uppercase;">Fase: ${euro.stage}</div>
+          </div>
+          <p style="color:var(--muted); font-size:13px;">Avversario: OVR ${euro.overall} · ${euro.isHome?'Giochi in casa':'Giochi in trasferta'}</p>
+          ${STATE.userLineup && lineupSlotCount()<11 ? `<p style="color:var(--red); font-size:12px;">Formazione incompleta: la tua rosa non copre tutti i ruoli del modulo scelto.</p>` : ''}
+          <button class="btn-primary" onclick="openEuroMatch()" ${STATE.userLineup && lineupSlotCount()<11 ? 'disabled':''}>Gioca in Europa</button>
+          <button class="btn-ghost" style="margin-left:8px;" onclick="simQuickEuroMatch()">Simula veloce</button>
+        </div>
+        <div class="panel">
+          <h3>Il tuo Club in Europa</h3>
+          <div class="team-stats" style="margin-bottom:10px;">
+            <div>OVR titolare<b>${effectiveOverall(me)}</b></div>
+            <div>Budget<b>${fmtM(me.budget)}</b></div>
+          </div>
+          <p style="color:var(--muted); font-size:13px;">Turno a eliminazione diretta. In caso di pareggio la partita si deciderà ai calci di rigore ad oltranza!</p>
+        </div>
+      </div>
+    `;
+  }
+
+  let round = dstate.schedule[roundIdx];
+  let myFixture = round.find(m=>m.home===me.id || m.away===me.id);
+  let opp = myFixture.home===me.id ? getTeam(myFixture.away) : getTeam(myFixture.home);
+  let isHome = myFixture.home===me.id;
+
+  return `
+    <div class="grid2">
+      <div class="panel">
+        <h2>Prossima partita</h2>
+        <div class="fixture-row" style="border:none;">
+          <div class="fixture-teams">
+            <b>${isHome? me.name : opp.name}</b><span class="vs">vs</span><b>${isHome? opp.name : me.name}</b>
+          </div>
+          <div class="mono" style="color:var(--muted); font-size:12px;">Giornata ${roundIdx+1} · ${divLabel}</div>
+        </div>
+        <p style="color:var(--muted); font-size:13px;">Avversario: OVR ${opp.overall} · ${isHome?'Giochi in casa':'Giochi in trasferta'}</p>
+        ${STATE.userLineup && lineupSlotCount()<11 ? `<p style="color:var(--red); font-size:12px;">Formazione incompleta: la tua rosa non copre tutti i ruoli del modulo scelto. Vai su Formazione o Mercato.</p>` : ''}
+        <button class="btn-primary" onclick="openMatch()" ${STATE.userLineup && lineupSlotCount()<11 ? 'disabled':''}>Gioca la giornata</button>
+        <button class="btn-ghost" style="margin-left:8px;" onclick="simQuickRound()">Simula veloce (senza diretta)</button>
+      </div>
+      <div class="panel">
+        <h3>Il tuo club</h3>
+        <div class="team-stats" style="margin-bottom:10px;">
+          <div>OVR titolare<b>${effectiveOverall(me)}</b></div>
+          <div>Modulo<b>${STATE.userLineup ? STATE.userLineup.formation : '—'}</b></div>
+          <div>Budget<b>${fmtM(me.budget)}</b></div>
+        </div>
+        <p style="color:var(--muted); font-size:13px;">${STATE.objective}.</p>
+        <p style="color:var(--muted); font-size:12px;">V ${me.win} · N ${me.draw} · P ${me.loss} — ${me.pts} punti</p>
+        <button class="btn-ghost btn-small" onclick="setTab('lineup')">Modifica formazione</button>
+      </div>
+    </div>
+  `;
+}
+
+function simQuickRound(){
+  const me = getTeam(STATE.userTeamId);
+  const dstate = STATE.divisions[me.division];
+  const round = dstate.schedule[dstate.currentRound];
+  round.forEach(m=>{
+    let [hg,ag] = quickScore(getTeam(m.home), getTeam(m.away));
+    dstate.results.push({round:dstate.currentRound, home:m.home, away:m.away, hg, ag});
+  });
+  dstate.currentRound++;
+  simulateOtherDivisionRound(me.division);
+  updatePlayersContracts();
+  maybeGenerateOffer();
+  checkAndTriggerEuro();
+  renderGame();
+}
+
+/* ---------- MATCH MODAL ---------- */
+function openMatch(){
+  STATE.pendingMatch = { tactic:"bal", isEuro: false };
+  renderMatchModal();
+}
+function openEuroMatch() {
+  STATE.pendingMatch = { tactic: "bal", isEuro: true };
+  renderMatchModal();
+}
+function simQuickEuroMatch(){
+  if(!STATE.activeEuroMatch) return;
+  const me = getTeam(STATE.userTeamId);
+  let euro = STATE.activeEuroMatch;
+  let match = euro.matchRef;
+  
+  let sh = euro.isHome ? effectiveOverall(me) : euro.overall;
+  let sa = euro.isHome ? euro.overall : effectiveOverall(me);
+  let eh = expectedGoals(sh, sa, "bal");
+  let ea = expectedGoals(sa, sh, "bal");
+  let hg = poissonRandom(eh);
+  let ag = poissonRandom(ea);
+  if (hg === ag) {
+    if (Math.random() > 0.5) hg++; else ag++;
+  }
+  
+  match.hg = hg;
+  match.ag = ag;
+  match.played = true;
+  match.winner = hg > ag ? match.home : match.away;
+  
+  let userWon = (match.winner.id === me.id && !match.winner.isEuroFake);
+  let prize = 0.5;
+  if(userWon) {
+    if(euro.stage === 'ottavi') prize = 4.0;
+    else if(euro.stage === 'quarti') prize = 7.0;
+    else if(euro.stage === 'semifinale') prize = 12.0;
+    else prize = 25.0;
+  }
+  me.budget += prize;
+  me.budget = Math.round(me.budget*10)/10;
+  
+  let stageMatches = STATE.euroTournament[euro.stage];
+  stageMatches.forEach(m => { if(!m.played) simulateEuroMatch(m); });
+  
+  advanceEuroStage();
+  STATE.activeEuroMatch = null;
+  updatePlayersContracts();
+  maybeGenerateOffer();
+  renderGame();
+}
+function closeMatchModal(){
+  document.getElementById('modal-root').innerHTML = "";
+}
+function setTactic(t){
+  STATE.pendingMatch.tactic = t;
+  renderMatchModal();
+}
+function renderMatchModal(){
+  const me = getTeam(STATE.userTeamId);
+  let homeTeam, awayTeam, compLabel;
+
+  if (STATE.pendingMatch && STATE.pendingMatch.isEuro) {
+    let euro = STATE.activeEuroMatch;
+    compLabel = `Coppa Europea — Fase Finale (${euro.stage})`;
+    homeTeam = euro.isHome ? me : { name: euro.oppName, crestShape: "circle", crestEmblem: "star" };
+    awayTeam = euro.isHome ? { name: euro.oppName, crestShape: "circle", crestEmblem: "star" } : me;
+  } else {
+    const dstate = STATE.divisions[me.division];
+    const round = dstate.schedule[dstate.currentRound];
+    const myFixture = round.find(m=>m.home===me.id || m.away===me.id);
+    const isHome = myFixture.home===me.id;
+    const opp = isHome ? getTeam(myFixture.away) : getTeam(myFixture.home);
+    homeTeam = isHome ? me : opp;
+    awayTeam = isHome ? opp : me;
+    compLabel = `Giornata ${dstate.currentRound+1} — Serie ${me.division}`;
+  }
+  const tactic = STATE.pendingMatch.tactic;
+
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay">
+      <div class="match-modal">
+        <div class="match-header">
+          <div class="comp">${compLabel}</div>
+        </div>
+        <div class="scoreboard">
+          <div class="side">
+            <div style="margin:0 auto 6px; width:40px;">${crestSVG(homeTeam,40)}</div>
+            <div class="sname">${homeTeam.name}</div>
+          </div>
+          <div class="score" id="score-display">0 - 0</div>
+          <div class="side">
+            <div style="margin:0 auto 6px; width:40px;">${crestSVG(awayTeam,40)}</div>
+            <div class="sname">${awayTeam.name}</div>
+          </div>
+        </div>
+        <div class="tactic-row" id="tactic-row">
+          <button class="tactic-btn ${tactic==='dif'?'sel':''}" onclick="setTactic('dif')">Difensivo</button>
+          <button class="tactic-btn ${tactic==='bal'?'sel':''}" onclick="setTactic('bal')">Equilibrato</button>
+          <button class="tactic-btn ${tactic==='off'?'sel':''}" onclick="setTactic('off')">Offensivo</button>
+        </div>
+        <div class="ticker-box" id="ticker-box">
+          <div class="empty-state">Scegli la tattica e avvia la partita<span class="cursor-blink">_</span></div>
+        </div>
+        <div class="modal-actions" id="match-actions">
+          <button class="btn-primary" onclick="startMatch()">Calcio d'inizio</button>
+          <button class="btn-ghost" onclick="closeMatchModal()">Annulla</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function startMatch(){
+  const me = getTeam(STATE.userTeamId);
+  let homeTeam, awayTeam, tactic, result;
+
+  if (STATE.pendingMatch && STATE.pendingMatch.isEuro) {
+    let euro = STATE.activeEuroMatch;
+    homeTeam = euro.isHome ? me : { name: euro.oppName, isEuroFake: true, overall: euro.overall, squad: euro.squad };
+    awayTeam = euro.isHome ? { name: euro.oppName, isEuroFake: true, overall: euro.overall, squad: euro.squad } : me;
+    tactic = euro.isHome ? STATE.pendingMatch.tactic : "bal";
+    result = detailedMatch(homeTeam, awayTeam, euro.isHome ? tactic : "bal");
+    
+    if (result.hg === result.ag) {
+      if (Math.random() > 0.5) {
+        result.hg++;
+        result.events.push({min: 120, type:"goal", side: euro.isHome?"home":"away", text:`VITTORIA AI RIGORI! ${me.name} si qualifica al turno successivo!`});
+      } else {
+        result.ag++;
+        result.events.push({min: 120, type:"goal", side: euro.isHome?"away":"home", text:`SCONFITTA AI RIGORI! ${me.name} viene eliminata dal torneo.`});
+      }
+    }
+  } else {
+    const dstate = STATE.divisions[me.division];
+    const round = dstate.schedule[dstate.currentRound];
+    const myFixture = round.find(m=>m.home===me.id || m.away===me.id);
+    const isHome = myFixture.home===me.id;
+    const opp = isHome ? getTeam(myFixture.away) : getTeam(myFixture.home);
+    homeTeam = isHome ? me : opp;
+    awayTeam = isHome ? opp : me;
+    tactic = isHome ? STATE.pendingMatch.tactic : "bal";
+    result = detailedMatch(homeTeam, awayTeam, isHome ? tactic : "bal");
+  }
+
+  STATE.pendingMatch.result = result;
+  STATE.pendingMatch.homeTeam = homeTeam;
+  STATE.pendingMatch.awayTeam = awayTeam;
+
+  document.getElementById('tactic-row').style.display = 'none';
+  const tickerBox = document.getElementById('ticker-box');
+  tickerBox.innerHTML = "";
+  document.getElementById('match-actions').innerHTML = `<button class="btn-ghost" onclick="skipToEnd()">Salta al risultato</button>`;
+
+  let hScore=0, aScore=0;
+  let i = 0;
+  STATE.pendingMatch.timer = null;
+  function playNext(){
+    if(i >= result.events.length){
+      finishMatch();
+      return;
+    }
+    const ev = result.events[i];
+    if(ev.type==='goal'){
+      if(ev.side==='home') hScore++; else aScore++;
+      document.getElementById('score-display').textContent = `${hScore} - ${aScore}`;
+    }
+    const line = document.createElement('div');
+    line.className = 'ticker-line' + (ev.type==='goal' ? ' goal':'');
+    line.innerHTML = `<span class="min">${ev.min}'</span>${ev.text}`;
+    tickerBox.appendChild(line);
+    tickerBox.scrollTop = tickerBox.scrollHeight;
+    i++;
+    STATE.pendingMatch.timer = setTimeout(playNext, 450);
+  }
+  playNext();
+}
+
+function skipToEnd(){
+  if(STATE.pendingMatch.timer) clearTimeout(STATE.pendingMatch.timer);
+  const result = STATE.pendingMatch.result;
+  document.getElementById('score-display').textContent = `${result.hg} - ${result.ag}`;
+  const tickerBox = document.getElementById('ticker-box');
+  tickerBox.innerHTML = result.events.map(ev=>
+    `<div class="ticker-line ${ev.type==='goal'?'goal':''}" style="opacity:1;"><span class="min">${ev.min}'</span>${ev.text}</div>`
+  ).join("");
+  tickerBox.scrollTop = tickerBox.scrollHeight;
+  finishMatch();
+}
+
+function finishMatch(){
+  document.getElementById('match-actions').innerHTML = `<button class="btn-primary" onclick="confirmMatchResult()">Fine partita — continua</button>`;
+  STATE.pendingMatch.finished = true;
+}
+
+function confirmMatchResult(){
+  const result = STATE.pendingMatch.result;
+  const me = getTeam(STATE.userTeamId);
+
+  if (STATE.pendingMatch && STATE.pendingMatch.isEuro) {
+    let euro = STATE.activeEuroMatch;
+    let match = euro.matchRef;
+    
+    match.hg = result.hg;
+    match.ag = result.ag;
+    match.played = true;
+    match.winner = result.hg > result.ag ? match.home : match.away;
+    
+    let userWon = (match.winner.id === me.id && !match.winner.isEuroFake);
+    let prize = 0.5;
+    if(userWon) {
+      if(euro.stage === 'ottavi') prize = 4.0;
+      else if(euro.stage === 'quarti') prize = 7.0;
+      else if(euro.stage === 'semifinale') prize = 12.0;
+      else prize = 25.0;
+    }
+    me.budget += prize;
+    me.budget = Math.round(me.budget * 10) / 10;
+    
+    let stageMatches = STATE.euroTournament[euro.stage];
+    stageMatches.forEach(m => { if(!m.played) simulateEuroMatch(m); });
+    
+    advanceEuroStage();
+    STATE.activeEuroMatch = null;
+    updatePlayersContracts();
+    maybeGenerateOffer();
+    closeMatchModal();
+    renderGame();
+    return;
+  }
+
+  const homeTeam = STATE.pendingMatch.homeTeam;
+  const awayTeam = STATE.pendingMatch.awayTeam;
+  const dstate = STATE.divisions[me.division];
+  const round = dstate.schedule[dstate.currentRound];
+
+  round.forEach(m=>{
+    if(m.home===homeTeam.id && m.away===awayTeam.id){
+      dstate.results.push({round:dstate.currentRound, home:m.home, away:m.away, hg:result.hg, ag:result.ag});
+    } else {
+      let [hg,ag] = quickScore(getTeam(m.home), getTeam(m.away));
+      dstate.results.push({round:dstate.currentRound, home:m.home, away:m.away, hg, ag});
+    }
+  });
+  dstate.currentRound++;
+  simulateOtherDivisionRound(me.division);
+  updatePlayersContracts();
+  maybeGenerateOffer();
+  checkAndTriggerEuro();
+  closeMatchModal();
+  renderGame();
+}
+
+/* ---------- PASSO STAGIONALE ---------- */
+function advanceWorldSeason(){
+  const standingsA = computeStandings('A');
+  const standingsB = computeStandings('B');
+  const relegatedTeams = standingsA.slice(-3);
+  const promotedTeams = standingsB.slice(0,3);
+
+  STATE.season++;
+
+  STATE.teams.forEach(t => t.qualifiedEurope = false);
+  standingsA.slice(0,4).forEach(st => {
+    let t = getTeam(st.id);
+    if(t) t.qualifiedEurope = true;
+  });
+
+  STATE.teams.forEach(team=>{
+    let newSquad = [];
+    team.squad.forEach(p=>{
+      p.age++;
+      p.contract -= 2;
+      
+      if(p.age>36){
+        newSquad.push(generatePlayer(team.overall, p.pos, 18));
+      } else if(p.contract <= 0) {
+        if(!STATE.freeAgentsPool) STATE.freeAgentsPool = [];
+        STATE.freeAgentsPool.push(p);
+      } else {
+        if(p.age<24) p.overall = clamp(p.overall + rand(0,3), 40, 96);
+        else if(p.age>29) p.overall = clamp(p.overall - rand(0,3), 35, 96);
+        p.value = calcValue(p);
+        
+        if (team.id !== STATE.userTeamId && p.contract <= 12 && Math.random() < 0.8) {
+           p.contract += 24;
+        }
+        newSquad.push(p);
+      }
+    });
+
+    const needCount = 18 - newSquad.length;
+    for(let k=0; k<needCount; k++){
+      if(team.id !== STATE.userTeamId && STATE.freeAgentsPool && STATE.freeAgentsPool.length > 0 && Math.random() < 0.3){
+         let fa = STATE.freeAgentsPool.pop();
+         fa.contract = 24;
+         newSquad.push(fa);
+      } else {
+         newSquad.push(generatePlayer(team.overall, choice(["POR","DIF","CEN","ATT"])));
+      }
+    }
+    
+    if(team.id === STATE.userTeamId && newSquad.length < 13){
+       for(let k=0; k < (13 - newSquad.length); k++) {
+          let pos = choice(["POR","DIF","CEN","ATT"]);
+          let freeP = generatePlayer(team.overall - 10, pos, 18);
+          freeP.contract = 12;
+          newSquad.push(freeP);
+       }
+    }
+
+    team.squad = newSquad;
+    team.overall = teamOverallFromSquad(team.squad);
+    team.budget = Math.round((team.budget + rand(3,12))*10)/10;
+  });
+
+  relegatedTeams.forEach(t=>{ t.division = 'B'; });
+  promotedTeams.forEach(t=>{ t.division = 'A'; });
+
+  STATE.divisions = {
+    A: { schedule: generateSchedule(STATE.teams.filter(t=>t.division==='A').map(t=>t.id)), results: [], currentRound: 0 },
+    B: { schedule: generateSchedule(STATE.teams.filter(t=>t.division==='B').map(t=>t.id)), results: [], currentRound: 0 }
+  };
+
+  STATE.lastRelegated = relegatedTeams.map(t=>t.id);
+  STATE.lastPromoted = promotedTeams.map(t=>t.id);
+
+  STATE.seasonEndResult = null;
+  STATE.market = [];
+  STATE.notifications = [];
+  STATE.activeEuroMatch = null;
+  tableViewDivision = null;
+
+  initEuroTournament();
+
+  if(STATE.userTeamId!==null){
+    const me = getTeam(STATE.userTeamId);
+    if(me) assignObjective(me);
+  }
+}
+
+function startNewSeason(){
+  advanceWorldSeason();
+  renderGame();
+}
+
+function handleSackedContinue(){
+  if(STATE.userTeamId!==null){
+    const exTeam = getTeam(STATE.userTeamId);
+    if(exTeam){
+      exTeam.manager = choice(FIRST_NAMES) + " " + choice(LAST_NAMES);
+    }
+    STATE.excludedTeamIds = STATE.excludedTeamIds || [];
+    if(!STATE.excludedTeamIds.includes(STATE.userTeamId)) STATE.excludedTeamIds.push(STATE.userTeamId);
+  }
+  advanceWorldSeason();
+  STATE.userTeamId = null;
+  STATE.userLineup = null;
+  STATE.objective = null;
+  STATE.objectiveType = null;
+  render();
+}
+
+/* ---------- SQUAD TAB ---------- */
+function squadHTML(){
+  const me = getTeam(STATE.userTeamId);
+  const order = {POR:0,DIF:1,CEN:2,ATT:3};
+  const squad = me.squad.slice().sort((a,b)=> order[a.pos]-order[b.pos] || b.overall-a.overall);
+  return `
+    <div class="panel">
+      <h2>Rosa — ${me.name}</h2>
+      <p style="color:var(--muted); font-size:13px; margin-top:-6px;">${squad.length} giocatori · OVR squadra ${teamOverallFromSquad(me.squad)} · Budget ${fmtM(me.budget)}</p>
+      <div class="squad-list">
+        ${squad.map(p=>`
+          <div class="prow">
+            <div class="pos-chip">${p.pos}</div>
+            <div class="ovr-badge">${p.overall}</div>
+            <div class="pname">
+              ${p.name}
+              ${p.contract <= 6 ? '<span class="tab-badge" style="background:var(--red);">SCADENZA</span>' : ''}
+            </div>
+            <div class="pmeta">${p.age} anni<br>${p.contract} mesi</div>
+            <div class="pval">${fmtM(p.value)}</div>
+            <button class="btn-ghost btn-small" onclick="renewPlayer(${p.id})">Rinnova</button>
+            <button class="btn-ghost btn-small" onclick="sellPlayer(${p.id})" ${squad.length<=11?'disabled title="Rosa minima raggiunta"':''}>Vendi</button>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- RENEWAL MODAL ---------- */
+function renewPlayer(id){
+  const me = getTeam(STATE.userTeamId);
+  const p = me.squad.find(pp=>pp.id===id);
+  if(!p) return;
+  
+  if(p.contract > 24){
+    showAlert(`Il contratto di ${p.name} è ancora lungo (${p.contract} mesi). Non c'è fretta per ora.`);
+    return;
+  }
+
+  STATE.renewal = { playerId: id, attempts: 0, maxAttempts: 3, years: 1, offer: Math.max(0.1, Math.round(p.value * 0.1 * 10)/10), status: "open" };
+  renderRenewalModal();
+}
+
+function closeRenewal(){
+  document.getElementById('modal-root').innerHTML = "";
+  STATE.renewal = null;
+}
+
+function updateRenewalYears(y){
+  if(!STATE.renewal) return;
+  STATE.renewal.years = parseInt(y);
+  const me = getTeam(STATE.userTeamId);
+  const p = me.squad.find(pp=>pp.id===STATE.renewal.playerId);
+  if(p) STATE.renewal.offer = Math.max(0.1, Math.round(p.value * 0.1 * STATE.renewal.years * 10)/10);
+  renderRenewalModal();
+}
+
+function renderRenewalModal(){
+  const neg = STATE.renewal;
+  const me = getTeam(STATE.userTeamId);
+  const p = me.squad.find(pp=>pp.id===neg.playerId);
+  if(!p){ closeRenewal(); return; }
+
+  let statusMsg = "";
+  if(neg.status==="rejected") statusMsg = `<p style="color:var(--red); font-size:13px;">Offerta rifiutata. L'agente chiede di più. Tentativi rimasti: ${neg.maxAttempts-neg.attempts}.</p>`;
+  if(neg.status==="failed") statusMsg = `<p style="color:var(--red); font-size:13px;">Trattativa saltata. Il giocatore rifiuta di prolungare il contratto per ora.</p>`;
+  if(neg.status==="accepted") statusMsg = `<p style="color:#8fe3a0; font-size:13px;">Rinnovo firmato! Contratto prolungato di ${neg.years} ann${neg.years===1?'o':'i'}.</p>`;
+  if(neg.status==="budget") statusMsg = `<p style="color:var(--red); font-size:13px;">Budget insufficiente (disponibili ${fmtM(me.budget)}).</p>`;
+
+  const disabled = neg.status==="failed" || neg.status==="accepted";
+  const expectedBonus = Math.max(0.1, Math.round(p.value * 0.1 * neg.years * 10)/10);
+
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay">
+      <div class="match-modal" style="max-width:420px;">
+        <div class="match-header"><div class="comp">Rinnovo Contratto</div></div>
+        <div style="text-align:center; margin-bottom:14px;">
+          <div class="ovr-badge" style="margin:0 auto 8px; width:36px; height:36px; font-size:14px;">${p.overall}</div>
+          <h3 style="margin:0;">${p.name}</h3>
+          <p style="color:var(--muted); font-size:12px; margin:4px 0;">${p.pos} · ${p.age} anni · ${p.contract} mesi residui</p>
+          <p style="color:var(--gold); font-size:14px; font-family:'Space Mono',monospace;">Bonus alla firma richiesto (stimato): ${fmtM(expectedBonus)}</p>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:140px;">
+                <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px;">Durata Rinnovo</label>
+                <select id="ren-years" onchange="updateRenewalYears(this.value)" ${disabled?'disabled':''} style="width:100%; background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:10px; border-radius:6px; font-family:'Space Mono',monospace; font-size:14px;">
+                  <option value="1" ${neg.years===1?'selected':''}>1 Anno</option>
+                  <option value="2" ${neg.years===2?'selected':''}>2 Anni</option>
+                  <option value="3" ${neg.years===3?'selected':''}>3 Anni</option>
+                  <option value="4" ${neg.years===4?'selected':''}>4 Anni</option>
+                </select>
+            </div>
+            <div style="flex:1; min-width:140px;">
+                <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px;">Offerta Bonus (€M)</label>
+                <input id="ren-offer" type="number" step="0.1" min="0.1" value="${neg.offer}" ${disabled?'disabled':''}
+                  style="width:100%; background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:10px; border-radius:6px; font-family:'Space Mono',monospace; font-size:16px;">
+            </div>
+        </div>
+
+        ${statusMsg}
+        <div class="modal-actions">
+          ${disabled
+            ? `<button class="btn-primary" onclick="closeRenewal()">Chiudi</button>`
+            : `<button class="btn-primary" onclick="submitRenewal()">Invia offerta</button><button class="btn-ghost" onclick="closeRenewal()">Annulla</button>`
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function submitRenewal(){
+  const neg = STATE.renewal;
+  const me = getTeam(STATE.userTeamId);
+  const p = me.squad.find(pp=>pp.id===neg.playerId);
+  if(!p) return;
+  
+  const offerInput = document.getElementById('ren-offer');
+  let offer = Math.max(0.1, parseFloat(offerInput.value) || 0.1);
+  
+  if(offer > me.budget){
+    neg.offer = offer;
+    neg.status = "budget";
+    renderRenewalModal();
+    return;
+  }
+  
+  neg.offer = offer;
+  neg.attempts++;
+  
+  const expected = Math.max(0.1, Math.round(p.value * 0.1 * neg.years * 10)/10);
+  let ratio = offer / expected;
+  let acceptProb = (ratio - 0.5) * 1.5; 
+  acceptProb = Math.max(0.05, Math.min(0.95, acceptProb));
+  
+  if(Math.random() < acceptProb){
+    me.budget = Math.round((me.budget - offer)*10)/10;
+    p.contract += neg.years * 12;
+    p.notifiedExpiry = false; 
+    STATE.notifications = (STATE.notifications || []).filter(n => !(n.type === 'expiry' && n.playerId === p.id));
+    neg.status = "accepted";
+    renderRenewalModal();
+    setTimeout(()=>{ closeRenewal(); renderGame(); }, 1200);
+  } else {
+    if(neg.attempts >= neg.maxAttempts) neg.status = "failed";
+    else neg.status = "rejected";
+    renderRenewalModal();
+  }
+}
+
+function sellPlayer(id){
+  const me = getTeam(STATE.userTeamId);
+  if(me.squad.length<=11) return;
+  const p = me.squad.find(pp=>pp.id===id);
+  if(!p) return;
+  const actualPrice = getMarketValue(p);
+  const price = Math.round(actualPrice*0.8*10)/10;
+  showConfirm(`Vendere ${p.name} per ${fmtM(price)}?`, ()=>{
+    const idx = me.squad.findIndex(pp=>pp.id===id);
+    if(idx===-1) return;
+    me.squad.splice(idx,1);
+    me.budget = Math.round((me.budget + price)*10)/10;
+    me.overall = teamOverallFromSquad(me.squad);
+    STATE.notifications = (STATE.notifications || []).filter(n => !(n.type === 'expiry' && n.playerId === id));
+    renderGame();
+  });
+}
+
+/* ---------- LINEUP TAB ---------- */
+const POS_LABELS = {
+  POR: { sing: "Portiere", plur: "Portieri" },
+  DIF: { sing: "Difensore", plur: "Difensori" },
+  CEN: { sing: "Centrocampista", plur: "Centrocampisti" },
+  ATT: { sing: "Attaccante", plur: "Attaccanti" }
+};
+
+function lineupHTML(){
+  ensureValidLineup();
+  const me = getTeam(STATE.userTeamId);
+  const lineup = STATE.userLineup;
+  const req = FORMATIONS[lineup.formation];
+  const ovr = effectiveOverall(me);
+  const complete = lineupSlotCount() === 11;
+
+  function slotGroup(pos, need){
+    const label = need > 1 ? POS_LABELS[pos].plur : POS_LABELS[pos].sing;
+    const players = me.squad.filter(p=>p.pos===pos).sort((a,b)=>b.overall-a.overall);
+    const slotIds = lineup.slots[pos] || [];
+    let rows = "";
+    for(let i=0;i<need;i++){
+      const currentId = slotIds[i] || null;
+      const usedElsewhere = new Set(slotIds.filter((id,idx)=>idx!==i));
+      const options = players.filter(p=>p.id===currentId || !usedElsewhere.has(p.id));
+      const current = players.find(p=>p.id===currentId);
+      rows += `
+        <div class="prow">
+          <div class="pos-chip">${pos}</div>
+          <div class="ovr-badge">${current ? current.overall : '–'}</div>
+          <select onchange="setSlot('${pos}',${i},this.value)" style="flex:1; background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:7px 8px; border-radius:6px; font-family:'Barlow',sans-serif;">
+            ${options.length===0 ? `<option value="">Nessun giocatore disponibile</option>` : options.map(p=>`<option value="${p.id}" ${p.id===currentId?'selected':''}>${p.name} (OVR ${p.overall})</option>`).join("")}
+          </select>
+        </div>
+      `;
+    }
+    return `
+      <div style="margin-bottom:16px;">
+        <h3 style="margin-bottom:6px; font-size:14px;">${label} <span style="color:var(--muted); font-weight:400; font-size:12px;">(${slotIds.filter(Boolean).length}/${need} titolari)</span></h3>
+        <div class="squad-list">${rows}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="panel">
+      <div class="market-controls">
+        <h2 style="margin:0;">Formazione titolare</h2>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span class="mono" style="color:var(--gold);">OVR titolare ${ovr}</span>
+          <select onchange="changeFormation(this.value)" style="background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:8px 10px; border-radius:6px;">
+            ${Object.keys(FORMATIONS).map(f=>`<option value="${f}" ${lineup.formation===f?'selected':''}>${f}</option>`).join("")}
+          </select>
+          <button class="btn-ghost btn-small" onclick="autoFillLineup()">Auto-completa</button>
+        </div>
+      </div>
+      <p style="color:var(--muted); font-size:12px; margin:-4px 0 12px;">Scegli chi scende in campo per ogni ruolo. Cambia il nome per sostituire il giocatore.</p>
+      ${!complete ? `<p style="color:var(--red); font-size:13px;">Formazione incompleta: la rosa non copre tutti i ruoli richiesti dal modulo.</p>` : ''}
+      ${slotGroup('POR',1)}
+      ${slotGroup('DIF',req.DIF)}
+      ${slotGroup('CEN',req.CEN)}
+      ${slotGroup('ATT',req.ATT)}
+    </div>
+  `;
+}
+function changeFormation(key){
+  STATE.userLineup.formation = key;
+  ensureValidLineup();
+  renderGame();
+}
+function autoFillLineup(){
+  const me = getTeam(STATE.userTeamId);
+  STATE.userLineup = buildAutoLineup(me, STATE.userLineup.formation);
+  renderGame();
+}
+function setSlot(pos, idx, playerIdRaw){
+  const playerId = playerIdRaw ? parseInt(playerIdRaw) : null;
+  if(!STATE.userLineup.slots[pos]) STATE.userLineup.slots[pos] = [];
+  STATE.userLineup.slots[pos][idx] = (playerId && !isNaN(playerId)) ? playerId : null;
+  renderGame();
+}
+
+/* ---------- CALENDAR TAB ---------- */
+function calendarHTML(){
+  const me = getTeam(STATE.userTeamId);
+  const dstate = STATE.divisions[me.division];
+  let rows = [];
+  for(let r=0; r<dstate.schedule.length; r++){
+    const round = dstate.schedule[r];
+    const fixture = round.find(m=>m.home===me.id || m.away===me.id);
+    const isHome = fixture.home===me.id;
+    const opp = getTeam(isHome? fixture.away : fixture.home);
+    const played = dstate.results.find(res=>res.round===r && ((res.home===fixture.home && res.away===fixture.away)));
+    let status;
+    if(played){
+      status = `<b class="mono">${played.hg} - ${played.ag}</b>`;
+    } else if(r===dstate.currentRound){
+      status = `<span style="color:var(--gold);">Prossima</span>`;
+    } else {
+      status = `<span style="color:var(--muted);">—</span>`;
+    }
+    rows.push(`
+      <div class="fixture-row">
+        <div class="fixture-teams">G${r+1} — ${isHome? me.name : opp.name}<span class="vs">vs</span>${isHome? opp.name : me.name}</div>
+        <div>${status}</div>
+      </div>
+    `);
+  }
+  return `<div class="panel"><h2>Calendario — Serie ${me.division}</h2>${rows.join("")}</div>`;
+}
+
+/* ---------- TABLE TAB (CLASSIFICA & TORNEO) ---------- */
+function setTableView(key){
+  tableViewDivision = key;
+  renderGame();
+}
+function setTableSubTab(sub) {
+  STATE.currentTableSubTab = sub;
+  renderGame();
+}
+function tableHTML(){
+  if (!STATE.currentTableSubTab) STATE.currentTableSubTab = 'league';
+  const me = getTeam(STATE.userTeamId);
+  const viewKey = tableViewDivision || me.division;
+  const standings = computeStandings(viewKey);
+  const n = standings.length;
+  const champCount = viewKey==='A' ? 4 : 3;
+  const relegCount = viewKey==='A' ? 3 : 0;
+
+  return `
+    <div class="panel">
+      <div class="market-controls">
+        <h2 style="margin:0;">Classifiche & Tornei · Stagione ${STATE.season}</h2>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="${STATE.currentTableSubTab==='league'&&viewKey==='A'?'btn-primary':'btn-ghost'} btn-small" onclick="setTableView('A'); setTableSubTab('league');">Serie A</button>
+          <button class="${STATE.currentTableSubTab==='league'&&viewKey==='B'?'btn-primary':'btn-ghost'} btn-small" onclick="setTableView('B'); setTableSubTab('league');">Serie B</button>
+          <button class="${STATE.currentTableSubTab==='euro'?'btn-primary':'btn-ghost'} btn-small" onclick="setTableSubTab('euro')">Coppa Europea (Tabellone)</button>
+        </div>
+      </div>
+      
+      ${STATE.currentTableSubTab === 'euro' ? `
+        <p style="color:var(--muted); font-size:12px; margin:4px 0 10px;">Tabellone ad eliminazione diretta con squadre reali e fittizie d'Europa. Turni programmati a metà campionato.</p>
+        ${euroBracketHTML()}
+      ` : `
+        <p style="color:var(--muted); font-size:12px; margin:4px 0 10px;">
+          ${viewKey==='A'
+            ? 'Zona blu: qualificazione alle coppe europee per il prossimo anno · Zona rossa: retrocessione.'
+            : 'Zona blu: promozione in Serie A.'}
+        </p>
+        <table>
+          <thead><tr>
+            <th>#</th><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>Pt</th>
+          </tr></thead>
+          <tbody>
+            ${standings.map((t,i)=>{
+              let cls = t.id===me.id ? 'user-row' : '';
+              if(i<champCount) cls += ' champ-zone';
+              if(relegCount>0 && i>=n-relegCount) cls += ' releg-zone';
+              return `<tr class="${cls}">
+                <td><span class="pos-num">${i+1}</span></td>
+                <td class="name-cell">${t.name} ${t.qualifiedEurope ? '⭐' : ''}</td>
+                <td>${t.played}</td><td>${t.win}</td><td>${t.draw}</td><td>${t.loss}</td>
+                <td>${t.gf}</td><td>${t.ga}</td><td>${t.gf-t.ga}</td><td><b>${t.pts}</b></td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      `}
+    </div>
+  `;
+}
+
+/* ---------- MARKET TAB ---------- */
+function weakestPosition(team){
+  const need = {POR:1, DIF:4, CEN:4, ATT:3};
+  let avgs = Object.keys(need).map(pos=>{
+    let top = team.squad.filter(p=>p.pos===pos).sort((a,b)=>b.overall-a.overall).slice(0,need[pos]);
+    let avg = top.length? top.reduce((s,p)=>s+p.overall,0)/top.length : 0;
+    return {pos, avg};
+  });
+  avgs.sort((a,b)=>a.avg-b.avg);
+  return avgs[0].pos;
+}
+function generateFreeAgent(){
+  let overall = rand(48,74);
+  let pos = choice(["POR","DIF","CEN","ATT"]);
+  let p = generatePlayer(overall, pos, rand(24,34));
+  p.value = 0;
+  p.contract = 0;
+  return p;
+}
+function refreshMarket(){
+  const me = getTeam(STATE.userTeamId);
+  let pool = [];
+  STATE.teams.filter(t=>t.id!==me.id && t.division===me.division).forEach(t=>{
+    t.squad.forEach(p=>{
+      let push = false;
+      if (p.contract <= 6 && Math.random() < 0.5) push = true;
+      
+      if(push){
+        pool.push({kind:"transfer", teamId:t.id, playerId:p.id, urgent:true});
+      } else if (Math.random() < 0.05) {
+        pool.push({kind:"transfer", teamId:t.id, playerId:p.id, urgent:false});
+      }
+    });
+  });
+  pool.sort(()=>Math.random()-0.5);
+  let market = pool.slice(0,30);
+  
+  let freeAgents = [];
+  if(STATE.freeAgentsPool && STATE.freeAgentsPool.length > 0){
+     let shuffled = STATE.freeAgentsPool.sort(()=>Math.random()-0.5);
+     let picked = shuffled.slice(0, 6);
+     picked.forEach(p => freeAgents.push({kind:"free", player: p}));
+  } else {
+     for(let i=0;i<rand(2,4);i++) freeAgents.push({kind:"free", player: generateFreeAgent()});
+  }
+  
+  STATE.market = market.concat(freeAgents);
+  renderGame();
+}
+function marketEntryData(entry){
+  if(entry.kind==="free") return {team:null, player:entry.player, urgent: false};
+  const t = getTeam(entry.teamId);
+  if(!t) return null;
+  const p = t.squad.find(pp=>pp.id===entry.playerId);
+  if(!p) return null;
+  return {team:t, player:p, urgent: entry.urgent};
+}
+function offerAcceptProbability(player, offer){
+  let ratio = offer / Math.max(0.1, getMarketValue(player));
+  let base = clamp((ratio-0.45)*1.25, 0.03, 0.97);
+  if(player.overall>=85) base *= 0.5;
+  else if(player.overall>=78) base *= 0.72;
+  if(player.age<=21 && player.overall>=68) base *= 0.8;
+  return clamp(base,0.03,0.97);
+}
+function marketHTML(){
+  const me = getTeam(STATE.userTeamId);
+  if(!STATE.market || STATE.market.length===0){
+    return `
+      <div class="panel">
+        <h2>Mercato trasferimenti — Serie ${me.division}</h2>
+        <div class="empty-state">Nessun giocatore sondato al momento.</div>
+        <button class="btn-primary" onclick="refreshMarket()">Cerca occasioni di mercato</button>
+      </div>`;
+  }
+  const weak = weakestPosition(me);
+  return `
+    <div class="panel">
+      <div class="market-controls">
+        <h2 style="margin:0;">Mercato trasferimenti — Serie ${me.division}</h2>
+        <div>
+          <span class="mono" style="color:var(--gold); margin-right:12px;">Budget ${fmtM(me.budget)}</span>
+          <button class="btn-ghost btn-small" onclick="refreshMarket()">Cerca nuovi giocatori</button>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+        <input id="mk-search" type="text" placeholder="Cerca per nome o squadra..." oninput="updateMarketList()"
+          style="flex:1; min-width:160px; background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:8px 10px; border-radius:6px; font-family:'Barlow',sans-serif;">
+        <select id="mk-pos" onchange="updateMarketList()" style="background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:8px 10px; border-radius:6px;">
+          <option value="ALL">Tutti i ruoli</option>
+          <option value="POR">Portieri</option>
+          <option value="DIF">Difensori</option>
+          <option value="CEN">Centrocampisti</option>
+          <option value="ATT">Attaccanti</option>
+        </select>
+        <select id="mk-sort" onchange="updateMarketList()" style="background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:8px 10px; border-radius:6px;">
+          <option value="ovr_desc">Overall ↓</option>
+          <option value="val_asc">Prezzo ↑</option>
+          <option value="val_desc">Prezzo ↓</option>
+          <option value="age_asc">Età ↑</option>
+        </select>
+      </div>
+      <p style="color:var(--muted); font-size:12px; margin:-4px 0 10px;">Reparto più debole: <b style="color:var(--gold)">${weak}</b></p>
+      <div class="squad-list" id="market-results">${buildMarketRows(me, weak)}</div>
+    </div>
+  `;
+}
+function buildMarketRows(me, weak){
+  const searchEl = document.getElementById('mk-search');
+  const posEl = document.getElementById('mk-pos');
+  const sortEl = document.getElementById('mk-sort');
+  const search = searchEl ? searchEl.value.trim().toLowerCase() : "";
+  const posFilter = posEl ? posEl.value : "ALL";
+  const sortMode = sortEl ? sortEl.value : "ovr_desc";
+
+  let entries = STATE.market.map(entry=>({entry, data:marketEntryData(entry)})).filter(x=>x.data);
+  if(posFilter!=="ALL") entries = entries.filter(x=>x.data.player.pos===posFilter);
+  if(search) entries = entries.filter(x=>{
+    const p=x.data.player, t=x.data.team;
+    return p.name.toLowerCase().includes(search) || (t && t.name.toLowerCase().includes(search));
+  });
+  entries.sort((a,b)=>{
+    const pa=a.data.player, pb=b.data.player;
+    if(sortMode==="ovr_desc") return pb.overall-pa.overall;
+    if(sortMode==="val_asc") return getMarketValue(pa)-getMarketValue(pb);
+    if(sortMode==="val_desc") return getMarketValue(pb)-getMarketValue(pa);
+    if(sortMode==="age_asc") return pa.age-pb.age;
+    return 0;
+  });
+
+  if(entries.length===0) return `<div class="empty-state">Nessun giocatore corrisponde ai filtri.</div>`;
+
+  return entries.map(({entry,data})=>{
+    const {team:t, player:p} = data;
+    const isFree = entry.kind==="free";
+    const actualPrice = isFree ? 0 : getMarketValue(p);
+    const isDiscounted = actualPrice < p.value;
+    const canAfford = isFree || me.budget >= actualPrice*0.5;
+    const recommended = p.pos===weak;
+    
+    return `
+      <div class="prow">
+        <div class="pos-chip">${p.pos}</div>
+        <div class="ovr-badge">${p.overall}</div>
+        <div class="pname">
+          ${p.name} <span style="color:var(--muted); font-size:11px;">(${isFree? 'Svincolato' : t.name})</span>
+          ${recommended? '<span class="tab-badge" style="background:transparent; border:1px solid var(--gold); color:var(--gold);">CONSIGLIATO</span>' : ''}
+          ${isDiscounted? '<span class="tab-badge" style="background:var(--red);">SCONTATO</span>' : ''}
+        </div>
+        <div class="pmeta">${p.age} anni</div>
+        <div class="pval" style="line-height:1.2;">
+          ${isFree? 'Free' : fmtM(actualPrice)}
+        </div>
+        ${isFree
+          ? `<button class="btn-primary btn-small" onclick="signFreeAgent(${p.id})">Tessera</button>`
+          : `<button class="btn-primary btn-small" onclick="openNegotiation(${t.id},${p.id})" ${canAfford?'':'disabled'}>Tratta</button>`
+        }
+      </div>
+    `;
+  }).join("");
+}
+function updateMarketList(){
+  const me = getTeam(STATE.userTeamId);
+  const weak = weakestPosition(me);
+  const el = document.getElementById('market-results');
+  if(el) el.innerHTML = buildMarketRows(me, weak);
+}
+function signFreeAgent(playerId){
+  const me = getTeam(STATE.userTeamId);
+  const entry = STATE.market.find(e=>e.kind==="free" && e.player.id===playerId);
+  if(!entry) return;
+  
+  entry.player.contract = 24;
+  
+  me.squad.push(entry.player);
+  me.overall = teamOverallFromSquad(me.squad);
+  
+  STATE.market = STATE.market.filter(e=>e!==entry);
+  if(STATE.freeAgentsPool) {
+    STATE.freeAgentsPool = STATE.freeAgentsPool.filter(p=>p.id!==playerId);
+  }
+  
+  renderGame();
+}
+
+/* ---------- NEGOTIATION MODAL ---------- */
+function openNegotiation(teamId, playerId){
+  const t = getTeam(teamId);
+  const p = t.squad.find(pp=>pp.id===playerId);
+  if(!p) return;
+  STATE.negotiation = { teamId, playerId, attempts:0, maxAttempts:3, offer: getMarketValue(p), status:"open" };
+  renderNegotiationModal();
+}
+function closeNegotiation(){
+  document.getElementById('modal-root').innerHTML = "";
+  STATE.negotiation = null;
+}
+function renderNegotiationModal(){
+  const neg = STATE.negotiation;
+  const t = getTeam(neg.teamId);
+  const p = t ? t.squad.find(pp=>pp.id===neg.playerId) : null;
+  const me = getTeam(STATE.userTeamId);
+  if(!p){
+    document.getElementById('modal-root').innerHTML = "";
+    return;
+  }
+  let statusMsg = "";
+  if(neg.status==="rejected") statusMsg = `<p style="color:var(--red); font-size:13px;">Offerta rifiutata. Tentativi rimasti: ${neg.maxAttempts-neg.attempts}.</p>`;
+  if(neg.status==="failed") statusMsg = `<p style="color:var(--red); font-size:13px;">La trattativa è saltata definitivamente.</p>`;
+  if(neg.status==="accepted") statusMsg = `<p style="color:#8fe3a0; font-size:13px;">Offerta accettata! ${p.name} si trasferisce.</p>`;
+  if(neg.status==="budget") statusMsg = `<p style="color:var(--red); font-size:13px;">Budget insufficiente (disponibili ${fmtM(me.budget)}).</p>`;
+
+  const disabled = neg.status==="failed" || neg.status==="accepted";
+  const mktValue = getMarketValue(p);
+  const discountNote = mktValue < p.value ? `<br><span style="color:var(--red); font-size:11px;">Valore in sconto!</span>` : '';
+
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay">
+      <div class="match-modal" style="max-width:420px;">
+        <div class="match-header"><div class="comp">Trattativa di mercato</div></div>
+        <div style="text-align:center; margin-bottom:14px;">
+          <div class="ovr-badge" style="margin:0 auto 8px; width:36px; height:36px; font-size:14px;">${p.overall}</div>
+          <h3 style="margin:0;">${p.name}</h3>
+          <p style="color:var(--muted); font-size:12px; margin:4px 0;">${p.pos} · ${p.age} anni · ${t.name}</p>
+          <p style="color:var(--gold); font-size:14px; font-family:'Space Mono',monospace;">Valore stimato: ${fmtM(mktValue)}${discountNote}</p>
+        </div>
+        <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px;">La tua offerta (€M)</label>
+        <input id="neg-offer" type="number" step="0.1" min="0.1" value="${neg.offer}" ${disabled?'disabled':''}
+          style="width:100%; background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:10px; border-radius:6px; font-family:'Space Mono',monospace; font-size:16px; margin-bottom:12px;">
+        ${statusMsg}
+        <div class="modal-actions">
+          ${disabled
+            ? `<button class="btn-primary" onclick="closeNegotiation()">Chiudi</button>`
+            : `<button class="btn-primary" onclick="submitOffer()">Invia offerta</button><button class="btn-ghost" onclick="closeNegotiation()">Annulla</button>`
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+function submitOffer(){
+  const neg = STATE.negotiation;
+  const t = getTeam(neg.teamId);
+  const p = t.squad.find(pp=>pp.id===neg.playerId);
+  const me = getTeam(STATE.userTeamId);
+  if(!p) return;
+  const offerInput = document.getElementById('neg-offer');
+  let offer = Math.max(0.1, parseFloat(offerInput.value) || getMarketValue(p));
+  if(offer > me.budget){
+    neg.offer = offer;
+    neg.status = "budget";
+    renderNegotiationModal();
+    return;
+  }
+  neg.offer = offer;
+  neg.attempts++;
+  const prob = offerAcceptProbability(p, offer);
+  if(Math.random() < prob){
+    const idx = t.squad.findIndex(pp=>pp.id===p.id);
+    t.squad.splice(idx,1);
+    t.overall = teamOverallFromSquad(t.squad);
+    me.budget = Math.round((me.budget - offer)*10)/10;
+    
+    p.contract = 24; 
+    me.squad.push(p);
+    me.overall = teamOverallFromSquad(me.squad);
+    
+    STATE.market = STATE.market.filter(e=>!(e.kind==="transfer" && e.teamId===t.id && e.playerId===p.id));
+    neg.status = "accepted";
+    renderNegotiationModal();
+    setTimeout(()=>{ closeNegotiation(); renderGame(); }, 1200);
+  } else {
+    if(neg.attempts >= neg.maxAttempts) neg.status = "failed";
+    else neg.status = "rejected";
+    renderNegotiationModal();
+  }
+}
+
+/* ---------- NOTIFICATIONS ---------- */
+function maybeGenerateOffer(){
+  if(STATE.userTeamId===null) return;
+  const me = getTeam(STATE.userTeamId);
+  if(!me || me.squad.length<=11) return;
+  const pendingCount = (STATE.notifications||[]).filter(n=>n.status==='pending').length;
+  if(pendingCount>=3) return;
+  if(Math.random() > 0.35) return;
+  const eligible = me.squad.slice();
+  if(eligible.length===0) return;
+  const player = choice(eligible);
+  const otherTeams = STATE.teams.filter(t=>t.id!==me.id && t.division===me.division);
+  if(otherTeams.length===0) return;
+  const buyer = choice(otherTeams);
+  
+  const mktValue = getMarketValue(player);
+  const askRatio = randf(0.55, 1.15);
+  const offerAmount = Math.max(0.2, Math.round(mktValue*askRatio*10)/10);
+  const maxBudget = Math.round(mktValue*randf(1.0,1.65)*10)/10;
+  
+  STATE.notifications = STATE.notifications || [];
+  STATE.notifications.unshift({
+    id: NOTIF_ID++,
+    type:'offer',
+    playerId: player.id,
+    buyerTeamId: buyer.id,
+    offerAmount,
+    maxBudget,
+    status:'pending',
+    round: STATE.divisions[me.division].currentRound
+  });
+}
+
+function dismissNotif(id){
+  STATE.notifications = STATE.notifications.filter(x=>x.id !== id);
+  renderGame();
+}
+
+function notificationsHTML(){
+  const list = STATE.notifications || [];
+  if(list.length===0){
+    return `
+      <div class="panel">
+        <h2>Notifiche</h2>
+        <div class="empty-state">Nessuna notifica al momento. Le offerte delle altre squadre e gli avvisi sui contratti arriveranno qui.</div>
+      </div>`;
+  }
+  return `
+    <div class="panel">
+      <h2>Notifiche</h2>
+      ${list.map(n=>renderNotifRow(n)).join("")}
+    </div>
+  `;
+}
+
+function renderNotifRow(n){
+  const me = getTeam(STATE.userTeamId);
+
+  if (n.type === 'expiry') {
+    const p = me ? me.squad.find(x => x.id === n.playerId) : null;
+    if(!p) return '';
+    return `
+      <div class="offer-row">
+        <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+          <div class="ovr-badge">${p.overall}</div>
+          <div style="flex:1; min-width:220px;">
+            <div class="pname">Contratto in scadenza: <b>${p.name}</b></div>
+            <div class="pmeta">Mancano solo ${p.contract} mesi. Rinnova il contratto per non perderlo!</div>
+            <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; align-items:center;">
+              <button class="btn-primary btn-small" onclick="renewPlayer(${p.id}); window.scrollTo(0,0);">Tratta rinnovo</button>
+              <button class="btn-ghost btn-small" onclick="dismissNotif(${n.id})">Ignora</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const buyer = getTeam(n.buyerTeamId);
+  const player = me ? me.squad.find(p=>p.id===n.playerId) : null;
+  const stillOwned = !!player;
+  let statusLine = '';
+  if(n.status==='accepted') statusLine = `<p style="color:#8fe3a0; font-size:12px; margin:6px 0 0;">Trasferimento completato per ${fmtM(n.counterAmount||n.offerAmount)}.</p>`;
+  else if(n.status==='rejected') statusLine = `<p style="color:var(--red); font-size:12px; margin:6px 0 0;">Offerta rifiutata.</p>`;
+  else if(n.status==='blocked') statusLine = `<p style="color:var(--red); font-size:12px; margin:6px 0 0;">Operazione bloccata: rosa al minimo.</p>`;
+  else if(n.status==='expired') statusLine = `<p style="color:var(--muted); font-size:12px; margin:6px 0 0;">Il giocatore non è più nella tua rosa.</p>`;
+
+  return `
+    <div class="offer-row">
+      <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+        <div class="ovr-badge">${stillOwned ? player.overall : '–'}</div>
+        <div style="flex:1; min-width:220px;">
+          <div class="pname">${buyer? buyer.name : 'Un club'} fa un'offerta per <b>${stillOwned ? player.name : 'un giocatore non più in rosa'}</b></div>
+          <div class="pmeta">Offerta: ${fmtM(n.offerAmount)}${stillOwned ? ` · Valore: ${fmtM(getMarketValue(player))}` : ''}</div>
+          ${statusLine}
+          ${(n.status==='pending' && stillOwned) ? `
+            <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; align-items:center;">
+              <button class="btn-primary btn-small" onclick="respondOffer(${n.id},'accept')">Accetta</button>
+              <button class="btn-danger btn-small" onclick="respondOffer(${n.id},'reject')">Rifiuta</button>
+              <input id="counter-${n.id}" type="number" step="0.1" placeholder="Contro-offerta €M"
+                style="width:130px; background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:6px 8px; border-radius:5px; font-family:'Space Mono',monospace; font-size:12px;">
+              <button class="btn-ghost btn-small" onclick="respondOffer(${n.id},'counter',parseFloat(document.getElementById('counter-${n.id}').value))">Proponi</button>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function respondOffer(notifId, action, counterValue){
+  const n = (STATE.notifications||[]).find(x=>x.id===notifId);
+  if(!n || n.status!=='pending') return;
+  const me = getTeam(STATE.userTeamId);
+  const player = me.squad.find(p=>p.id===n.playerId);
+  if(!player){ n.status='expired'; renderGame(); return; }
+
+  if(action==='accept'){
+    if(me.squad.length<=11){ n.status='blocked'; renderGame(); return; }
+    const idx = me.squad.findIndex(p=>p.id===player.id);
+    me.squad.splice(idx,1);
+    me.budget = Math.round((me.budget + n.offerAmount)*10)/10;
+    me.overall = teamOverallFromSquad(me.squad);
+    STATE.notifications = (STATE.notifications || []).filter(notif => !(notif.type === 'expiry' && notif.playerId === player.id));
+    n.status = 'accepted';
+  } else if(action==='reject'){
+    n.status = 'rejected';
+  } else if(action==='counter'){
+    const counter = Math.max(0.1, isNaN(counterValue) ? getMarketValue(player) : counterValue);
+    n.counterAmount = counter;
+    if(counter <= n.maxBudget){
+      if(me.squad.length<=11){ n.status='blocked'; renderGame(); return; }
+      const idx = me.squad.findIndex(p=>p.id===player.id);
+      me.squad.splice(idx,1);
+      me.budget = Math.round((me.budget + counter)*10)/10;
+      me.overall = teamOverallFromSquad(me.squad);
+      STATE.notifications = (STATE.notifications || []).filter(notif => !(notif.type === 'expiry' && notif.playerId === player.id));
+      n.status = 'accepted';
+    } else {
+      n.status = 'rejected';
+    }
+  }
+  renderGame();
+}
+
+// Avvio iniziale dell'applicazione
+render();
+</script>
+</body>
+</html>
