@@ -337,10 +337,24 @@ function crestSVG(team, size){
 
 let PLAYER_ID = 1;
 function calcValue(p){
-  let ageFactor = p.age<=23?1.35 : p.age<=29?1.1 : p.age<=32?0.75:0.35;
-  let base = Math.pow(p.overall/50,3)*7.5;
-  let v = base*ageFactor;
-  return Math.max(0.2, Math.round(v*10)/10);
+  let ageFactor = p.age <= 21 ? 1.6  : 
+                  p.age <= 25 ? 1.4  : 
+                  p.age <= 29 ? 1.1  : 
+                  p.age <= 32 ? 0.65 : 0.25;
+  
+  let base;
+  if (p.overall >= 90) {
+    base = Math.pow(p.overall / 43, 6.2); 
+  } else if (p.overall >= 80) {
+    base = Math.pow(p.overall / 46, 5.0); 
+  } else {
+    base = Math.pow(p.overall / 50, 3.5) * 8.0; 
+  }
+  
+  let v = base * ageFactor;
+  
+  if (v > 50) return Math.round(v); 
+  return Math.max(0.2, Math.round(v * 10) / 10);
 }
 function getMarketValue(p){
   if(p.contract <= 6) return Math.max(0.1, Math.round(p.value * 0.6 * 10)/10);
@@ -351,7 +365,7 @@ function generatePlayer(teamOverall, pos, ageOverride){
   let variance = rand(-13,13);
   let ageAdj = age<21? -4 : (age>32? -3:0);
   let overall = clamp(teamOverall+variance+ageAdj, 40, 94);
-  let p = {id:PLAYER_ID++, name: choice(FIRST_NAMES)+" "+choice(LAST_NAMES), pos, age, overall};
+  let p = {id:PLAYER_ID++, name: choice(FIRST_NAMES)+" "+choice(LAST_NAMES), pos, age, overall, onSale: false};
   p.value = calcValue(p);
   p.contract = rand(12, 48);
   return p;
@@ -389,6 +403,9 @@ function generateWorld(){
     let budget = entry.division==='A'
       ? Math.max(8, Math.round((10 + (overall-55)*2.5 + rand(-5,10))*10)/10)
       : Math.max(2, Math.round((4 + (overall-45)*1.5 + rand(-3,5))*10)/10);
+    
+    budget = Math.max(budget, overall > 80 ? rand(60, 120) : budget);  
+
     let color = badgeColor(i);
     return {
       id:i, name:entry.name, division:entry.division, color, colorSecondary: hslShift(color, 34), squad, overall, budget,
@@ -630,7 +647,7 @@ function openHelpModal(){
             <li><b>Dashboard:</b> Il cuore del gioco. Da qui puoi simulare le partite o giocarle in diretta scegliendo la tattica.</li>
             <li><b>Rosa & Formazione:</b> Controlla i tuoi giocatori. Un OVR più alto significa giocatori migliori. In Formazione decidi chi scende in campo: assicurati di coprire tutti i ruoli!</li>
             <li><b>Calendario & Classifica:</b> Tieni d'occhio i tuoi progressi nel campionato e nelle Coppe Europee.</li>
-            <li><b>Mercato:</b> Compra nuovi talenti. Scegli saggiamente e tratta sul prezzo. Puoi anche ingaggiare svincolati gratuitamente.</li>
+            <li><b>Mercato:</b> Compra nuovi talenti. Scegli saggiamente e tratta sul prezzo. Puoi mettere i tuoi giocatori nella lista trasferimenti per ricevere offerte.</li>
             <li><b>Notifiche:</b> Qui riceverai le offerte degli altri club per i tuoi giocatori e gli avvisi sui contratti in scadenza.</li>
           </ul>
           <h3 style="color:var(--gold);">Gestione Finanze e Contratti</h3>
@@ -1224,7 +1241,7 @@ function simQuickRound(){
   dstate.currentRound++;
   simulateOtherDivisionRound(me.division);
   updatePlayersContracts();
-  maybeGenerateOffer();
+  generateAIOffersForUser();
   checkAndTriggerEuro();
   renderGame();
 }
@@ -1276,7 +1293,7 @@ function simQuickEuroMatch(){
   advanceEuroStage();
   STATE.activeEuroMatch = null;
   updatePlayersContracts();
-  maybeGenerateOffer();
+  generateAIOffersForUser();
   renderGame();
 }
 function closeMatchModal(){
@@ -1453,7 +1470,7 @@ function confirmMatchResult(){
     advanceEuroStage();
     STATE.activeEuroMatch = null;
     updatePlayersContracts();
-    maybeGenerateOffer();
+    generateAIOffersForUser();
     closeMatchModal();
     renderGame();
     return;
@@ -1475,7 +1492,7 @@ function confirmMatchResult(){
   dstate.currentRound++;
   simulateOtherDivisionRound(me.division);
   updatePlayersContracts();
-  maybeGenerateOffer();
+  generateAIOffersForUser();
   checkAndTriggerEuro();
   closeMatchModal();
   renderGame();
@@ -1592,6 +1609,15 @@ function handleSackedContinue(){
 }
 
 /* ---------- SQUAD TAB ---------- */
+function toggleSaleStatus(playerId) {
+  const me = getTeam(STATE.userTeamId);
+  const player = me.squad.find(p => p.id === playerId);
+  if (!player) return;
+  
+  player.onSale = !player.onSale;
+  renderGame(); 
+}
+
 function squadHTML(){
   const me = getTeam(STATE.userTeamId);
   const order = {POR:0,DIF:1,CEN:2,ATT:3};
@@ -1608,9 +1634,13 @@ function squadHTML(){
             <div class="pname">
               ${p.name}
               ${p.contract <= 6 ? '<span class="tab-badge" style="background:var(--red);">SCADENZA</span>' : ''}
+              ${p.onSale ? '<span class="tab-badge" style="background:var(--blue);">IN LISTA</span>' : ''}
             </div>
             <div class="pmeta">${p.age} anni<br>${p.contract} mesi</div>
             <div class="pval">${fmtM(p.value)}</div>
+            <button class="btn-ghost btn-small ${p.onSale ? 'btn-danger' : ''}" onclick="toggleSaleStatus(${p.id})">
+              ${p.onSale ? 'Rimuovi Lista Trasferimenti' : 'Metti in Lista Trasferimenti'}
+            </button>
             <button class="btn-ghost btn-small" onclick="renewPlayer(${p.id})">Rinnova</button>
             <button class="btn-ghost btn-small" onclick="sellPlayer(${p.id})" ${squad.length<=11?'disabled title="Rosa minima raggiunta"':''}>Vendi</button>
           </div>
@@ -2211,36 +2241,41 @@ function submitOffer(){
   }
 }
 
-/* ---------- NOTIFICATIONS ---------- */
-function maybeGenerateOffer(){
-  if(STATE.userTeamId===null) return;
+/* ---------- NOTIFICATIONS E OFFERTE IA ---------- */
+function generateAIOffersForUser(){
   const me = getTeam(STATE.userTeamId);
-  if(!me || me.squad.length<=11) return;
+  if(!me || me.squad.length <= 11) return;
+
   const pendingCount = (STATE.notifications||[]).filter(n=>n.status==='pending').length;
-  if(pendingCount>=3) return;
-  if(Math.random() > 0.35) return;
-  const eligible = me.squad.slice();
-  if(eligible.length===0) return;
-  const player = choice(eligible);
-  const otherTeams = STATE.teams.filter(t=>t.id!==me.id && t.division===me.division);
-  if(otherTeams.length===0) return;
-  const buyer = choice(otherTeams);
-  
-  const mktValue = getMarketValue(player);
-  const askRatio = randf(0.55, 1.15);
-  const offerAmount = Math.max(0.2, Math.round(mktValue*askRatio*10)/10);
-  const maxBudget = Math.round(mktValue*randf(1.0,1.65)*10)/10;
-  
-  STATE.notifications = STATE.notifications || [];
-  STATE.notifications.unshift({
-    id: NOTIF_ID++,
-    type:'offer',
-    playerId: player.id,
-    buyerTeamId: buyer.id,
-    offerAmount,
-    maxBudget,
-    status:'pending',
-    round: STATE.divisions[me.division].currentRound
+  if(pendingCount >= 3) return;
+
+  me.squad.forEach(player => {
+    let chance = player.onSale ? 0.45 : 0.05;
+    
+    if (Math.random() < chance) {
+      const otherTeams = STATE.teams.filter(t => t.id !== me.id);
+      if(otherTeams.length === 0) return;
+      const buyer = choice(otherTeams);
+      
+      const marketVal = getMarketValue(player);
+      let offerAmount = marketVal * randf(0.85, 1.15);
+      offerAmount = offerAmount > 50 ? Math.round(offerAmount) : Math.round(offerAmount * 10) / 10;
+      
+      let maxBudget = offerAmount * randf(1.15, 1.35);
+      maxBudget = maxBudget > 50 ? Math.round(maxBudget) : Math.round(maxBudget * 10) / 10;
+
+      STATE.notifications = STATE.notifications || [];
+      STATE.notifications.unshift({
+        id: NOTIF_ID++,
+        type: 'offer',
+        playerId: player.id,
+        buyerTeamId: buyer.id,
+        offerAmount: offerAmount,
+        maxBudget: maxBudget,
+        status: 'pending',
+        round: STATE.divisions[me.division].currentRound
+      });
+    }
   });
 }
 
