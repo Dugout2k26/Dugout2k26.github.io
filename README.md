@@ -37,7 +37,7 @@ Il gioco gira completamente nel browser:
 
 * Nessun server richiesto
 * Tutto gestito tramite JavaScript
-* Salvataggi locali (in futuro)
+* Salvataggi locali
 
 ---
 
@@ -46,6 +46,7 @@ Il gioco gira completamente nel browser:
 ```
 index.html   → gioco completo
 README.md    → descrizione progetto
+LICENSE      → licensa del progetto
 ```
 
 ---
