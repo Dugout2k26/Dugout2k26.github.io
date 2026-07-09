@@ -564,6 +564,31 @@ function lineupSlotCount(){
 }
 
 /* ---------- Modals ---------- */
+function saveGame(){
+  if(!STATE) return;
+  STATE.savedPlayerId = PLAYER_ID;
+  STATE.savedNotifId = NOTIF_ID;
+  localStorage.setItem('dugout26_save', JSON.stringify(STATE));
+  showAlert("Partita salvata con successo!");
+}
+
+function loadGame(){
+  let saved = localStorage.getItem('dugout26_save');
+  if(saved){
+    try{
+      STATE = JSON.parse(saved);
+      if(STATE.savedPlayerId) PLAYER_ID = STATE.savedPlayerId;
+      if(STATE.savedNotifId) NOTIF_ID = STATE.savedNotifId;
+      render();
+      showAlert("Partita caricata con successo!");
+    }catch(e){
+      showAlert("Errore durante il caricamento del salvataggio.");
+    }
+  }else{
+    showAlert("Nessun salvataggio trovato.");
+  }
+}
+
 function showConfirm(message, onYes){
   STATE.confirmCallback = onYes;
   const root = document.getElementById('modal-root');
@@ -899,6 +924,7 @@ function renderTeamSelect(){
       <div style="max-width: 340px; margin: 20px auto 0; text-align: left; background: var(--panel); padding: 14px; border: 1px solid var(--line); border-radius: 8px;">
         <label style="font-size: 11px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 6px; font-family: 'Space Mono', monospace; text-align: center;">Nome Allenatore</label>
         <input id="user-coach-name" type="text" placeholder="Inserisci il tuo nome..." value="${STATE.userCoachName || ''}" style="width:100%; background:var(--panel-light); border:1px solid var(--line); color:var(--chalk); padding:8px 12px; border-radius:6px; font-family:'Barlow',sans-serif; font-size:15px; text-align: center; box-sizing: border-box; outline: none;">
+        ${localStorage.getItem('dugout26_save') ? `<div style="margin-top: 14px; text-align: center;"><button class="btn-ghost" onclick="loadGame()" style="width: 100%;">Carica Partita Salvata</button></div>` : ''}
       </div>
 
       <svg class="pitch-sig" viewBox="0 0 220 100" fill="none">
@@ -999,6 +1025,10 @@ function renderGame(){
     </div>
     <div id="tab-content"></div>
     <div class="footer-note">
+      <button class="link-reset" onclick="saveGame()">Salva partita</button>
+      &nbsp;·&nbsp;
+      <button class="link-reset" onclick="loadGame()">Carica partita</button>
+      &nbsp;·&nbsp;
       <button class="link-reset" onclick="switchTeam()">Cambia squadra</button>
       &nbsp;·&nbsp;
       <button class="link-reset" onclick="resetCareer()">Nuova carriera (reset completo)</button>
