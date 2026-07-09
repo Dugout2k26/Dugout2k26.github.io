@@ -13,6 +13,7 @@ Crea la tua carriera, gestisci la squadra e porta il tuo club alla vittoria 🏆
 
 ## 🎮 Funzionalità
 
+* 💾 Sistema di salvataggio
 * ⚽ Simulazione partite
 * 🔄 Squadre e giocatori generati casualmente
 * 💰 Sistema di mercato
@@ -65,7 +66,6 @@ git clone https://github.com/Dugout2k26/Dugout2k26.github.io
 
 ## 💡 Progetti futuri
 
-* 💾 Sistema di salvataggio carriera
 * 📱 Supporto mobile
 * 🎨 UI migliorata (stile FIFA)
 * 🏟️ Più competizioni
